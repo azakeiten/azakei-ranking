@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>本日の億万長者｜AZAKEI 麻布経済展</title>
+<meta name="description" content="麻布経済展（AZAKEI）のチップ獲得ランキング。チップ5枚からスタートして、いちばん増やしたのはだれ？">
+<meta property="og:title" content="本日の億万長者｜AZAKEI 麻布経済展">
+<meta property="og:description" content="チップ5枚からスタート。いちばん増やしたのはだれ？ 麻布経済展のリアルタイムランキング。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://azakeiten.github.io/azakei-ranking/">
+<meta name="theme-color" content="#26443a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%2326443a'/%3E%3Ctext x='32' y='46' font-size='38' text-anchor='middle' fill='%23f2dc6d' font-family='sans-serif' font-weight='700'%3E億%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Yomogi&display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="wall">
+  <div class="topbar">
+    <a class="org" href="https://azakeiten.github.io/">AZAKEI ・ 麻布経済展</a>
+    <div class="clock" id="clock" aria-label="現在時刻"><i class="h" id="hh"></i><i class="m" id="mm"></i><i class="s" id="sec"></i><b></b></div>
+    <div class="wall-right">
+      <span id="adminBar" hidden class="admin-tag">管理者ページ</span>
+      <button class="btn" id="fsBtn" type="button">全画面で映す</button>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="board-frame">
+      <div class="board" id="board">
+        <div class="writing">
+          <div class="title-row">
+            <h1 class="chalk" id="h1">本日の億万長者</h1>
+            <div class="tally chalk" id="tally"></div>
+          </div>
+          <div class="days chalk" id="days" hidden></div>
+
+          <div class="cols">
+            <div class="ranking">
+              <ol class="list" id="list"></ol>
+              <div id="restWrap" hidden>
+                <div class="rest-head chalk" id="restHead"></div>
+                <ol class="rest chalk" id="rest"></ol>
+              </div>
+              <div class="empty chalk" id="empty">まだ だれも書かれていません。<br>チップを増やして、この黒板に名前を残そう。</div>
+            </div>
+
+            <aside class="aside">
+              <div class="paper news" id="paper" hidden>
+                <span class="magnet l"></span><span class="magnet r"></span>
+                <h3>速報</h3>
+                <div class="big" id="paperBig"></div>
+                <ul id="paperList"></ul>
+              </div>
+              <figure class="chart chalk" id="chart" hidden>
+                <figcaption>本日の最高記録の推移</figcaption>
+                <svg id="chartSvg" viewBox="0 0 320 170" role="img" aria-label="最高記録の推移"></svg>
+              </figure>
+              <div class="paper qr" id="qrPaper" hidden>
+                <span class="magnet c"></span>
+                <div class="qr-code" id="qr"></div>
+                <div class="qr-text"><b>スマホでも見られる</b><span>azakeiten.github.io<br>/azakei-ranking/</span></div>
+              </div>
+            </aside>
+          </div>
+
+          <div class="rule chalk">スタートは <span class="y">5枚</span>。<span class="p">40枚をこえたら シャーペン</span> をプレゼント！</div>
+          <div class="status chalk" id="status" role="status"></div>
+        </div>
+        <div class="edge chalk" id="edge"></div>
+      </div>
+      <div class="tray" aria-hidden="true"><i class="c1"></i><i class="c2"></i><i class="c3"></i><i class="eraser"></i></div>
+    </div>
+
+    <form class="slip" id="form" autocomplete="off" hidden>
+      <span class="magnet l"></span><span class="magnet r"></span>
+      <h2>チップ記録 入力用紙</h2>
+      <div id="passBox" class="pass-box">
+        <label for="pass">合言葉<input id="pass" type="password" autocomplete="current-password" placeholder="管理者の合言葉"></label>
+        <button class="submit" id="passBtn" type="button">入力をはじめる</button>
+      </div>
+      <div id="entryBox" hidden>
+        <label for="name">プレイヤー名<input id="name" maxlength="20" placeholder="例：たろう"></label>
+        <label for="chips">チップの枚数
+          <span class="chips-row">
+            <button class="step" type="button" data-step="-1" aria-label="1枚減らす">−</button>
+            <input id="chips" type="number" inputmode="numeric" min="0" max="99999" value="5">
+            <button class="step" type="button" data-step="1" aria-label="1枚増やす">＋</button>
+          </span>
+        </label>
+        <label for="date">日付<input id="date" type="date"></label>
+        <button class="submit" id="submit" type="submit">黒板に書く</button>
+      </div>
+      <p class="msg" id="msg" role="status"></p>
+      <p class="hint" id="hint">押すと、お客さん側の黒板も数秒で書きかわります。書きまちがいは黒板の「消す」で直せます。</p>
+      <button class="linkish" id="forget" type="button" hidden>この端末の合言葉を忘れる</button>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
