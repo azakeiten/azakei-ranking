@@ -263,6 +263,7 @@ function render(force) {
     const nmT = document.createElement("span"); nmT.className = "nm"; nmT.textContent = e.name;
     nm.append(nmT);
     if (justNow) { const s = document.createElement("span"); s.className = "scrib now"; s.textContent = "いま来た！"; nm.appendChild(s); }
+    else if (i === 0 && filter === today() && now - e.createdAt >= 60000) { const s = document.createElement("span"); s.className = "scrib keep"; s.textContent = "首位キープ " + duration(now - e.createdAt); nm.appendChild(s); }
     if (e.chips > PRIZE) { const s = document.createElement("span"); s.className = "scrib prize"; s.textContent = "シャーペン！"; nm.appendChild(s); }
     if (filter === "all") { const s = document.createElement("span"); s.className = "scrib date"; s.textContent = fmtShort(e.date); nm.appendChild(s); }
     const lead = document.createElement("span"); lead.className = "leader"; nm.appendChild(lead);
@@ -278,6 +279,7 @@ function render(force) {
   $("restHead").textContent = "── " + (TOP_N + 1) + "位から下 ──";
 
   renderNews(list);
+  renderAim(list);
   renderChart(list);
   fresh = new Set(); // animate each arrival once
   if (list.length) drewOnce = true;
@@ -289,10 +291,34 @@ function renderNews(list) {
   paper.hidden = byTime.length === 0;
   if (!byTime.length) return;
   const n = byTime[0];
+  $("paperNth").textContent = filter === "all" ? "" : (filter === today() ? "今日 " : "") + byTime.length + "人目";
   $("paperBig").textContent = hhmm(n.createdAt) + "　" + n.name + " さん " + n.chips + "枚 → " + rankOf(list, n) + "位に！";
   const ul = $("paperList"); ul.textContent = "";
   byTime.slice(1, 3).forEach(e => { const li = document.createElement("li"); li.textContent = hhmm(e.createdAt) + "　" + e.name + "　" + e.chips + "枚（" + rankOf(list, e) + "位）"; ul.appendChild(li); });
   if (fresh.has(n.id) && !reduced()) { paper.classList.remove("pop"); void paper.offsetWidth; paper.classList.add("pop"); }
+}
+
+function duration(ms) {
+  const m = Math.floor(ms / 60000), h = Math.floor(m / 60);
+  return h ? h + "時間" + (m % 60) + "分" : m + "分";
+}
+
+/* "ランクインするには？": the chips needed to tie each line right now */
+function renderAim(list) {
+  const box = $("aim"), dl = $("aimList");
+  if (!list.length) { box.hidden = true; return; }
+  box.hidden = false; dl.textContent = "";
+  const rows = [];
+  rows.push(["1位", list[0].chips]);
+  if (list.length >= 3) rows.push(["3位", list[2].chips]);
+  if (list.length >= TOP_N) rows.push([TOP_N + "位", list[TOP_N - 1].chips]);
+  rows.push(["シャーペン", PRIZE + 1, "pz"]);
+  for (const [label, n, cls] of rows) {
+    const wrap = document.createElement("div"); wrap.style.display = "contents"; if (cls) wrap.className = cls;
+    const dt = document.createElement("dt"); dt.textContent = label;
+    const dd = document.createElement("dd"); dd.append(String(n)); const s = document.createElement("small"); s.textContent = "枚〜"; dd.appendChild(s);
+    wrap.append(dt, dd); dl.appendChild(wrap);
+  }
 }
 
 /* chalk chart: how the day's best score climbed, like a price chart drawn by a teacher */

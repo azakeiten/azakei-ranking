@@ -66,6 +66,8 @@ body.admin .stage { grid-template-columns: minmax(0, 1fr) 300px; }
   display: grid; grid-template-columns: minmax(0, 1fr) auto; min-height: 460px; overflow: hidden;
   box-shadow: inset 0 0 90px rgba(0,0,0,.38); }
 .writing { padding: clamp(16px, 3vw, 34px) clamp(14px, 3.2vw, 42px) 24px; min-width: 0; display: grid; gap: 10px; align-content: start; }
+.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.chalk { filter: url(#chalky); }
 .chalk { color: var(--chalk); -webkit-mask-image: var(--chalk-mask); mask-image: var(--chalk-mask); -webkit-mask-size: 160px; mask-size: 160px; text-shadow: 0 0 1px rgba(240,239,231,.45); }
 
 .title-row { display: flex; align-items: flex-end; gap: 6px 22px; flex-wrap: wrap; }
@@ -96,6 +98,18 @@ h1 .under { position: absolute; left: -2%; bottom: -14px; width: 104%; height: 2
 .scrib.prize { color: var(--chalk-pink); }
 .scrib.now { color: var(--chalk-yellow); transform: rotate(5deg) translateY(-.5em); }
 .scrib.date { color: var(--chalk-dim); }
+.scrib.keep { color: var(--chalk-blue); transform: rotate(-2deg); }
+
+/* "ランクインするには？" — a box drawn in chalk */
+.aim { position: relative; padding: 14px 16px 12px; transform: rotate(.7deg); }
+.aim::before { content: ""; position: absolute; inset: 0; border: 2.5px solid var(--chalk-dim); border-radius: 10px 4px 12px 6px / 6px 12px 4px 10px; }
+.aim-title { font-family: var(--f-scribble); color: var(--chalk-yellow); font-size: 17px; margin-bottom: 6px; }
+.aim dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 3px 14px; align-items: baseline; font-size: 17px; }
+.aim dt { color: var(--chalk-dim); font-family: var(--f-scribble); font-size: 15px; }
+.aim dd { margin: 0; text-align: right; font-weight: 600; }
+.aim dd small { font-weight: 400; font-size: .75em; color: var(--chalk-dim); margin-left: 2px; }
+.aim .pz dt, .aim .pz dd { color: var(--chalk-pink); }
+.news h3 span { letter-spacing: .05em; color: #5d605c; font-weight: 400; margin-left: 8px; }
 .row.r1 { font-size: clamp(30px, 4.4vw, 62px); padding-block: 20px 24px; }
 .row.r1 .count { color: var(--chalk-yellow); padding-inline: .2em; }
 .row.r1 .hanamaru { position: absolute; left: 50%; top: 42%; width: 2.5em; height: 2.5em; transform: translate(-50%, -50%); overflow: visible; pointer-events: none; }
