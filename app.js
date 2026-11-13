@@ -31,6 +31,7 @@ let filter = null, userPicked = false;
 let isAdmin = location.hash === "#admin";
 let pass = ls.get("azakei-pass") || "";
 let busy = false, pendingDel = null, lastSig = "", failCount = 0, drewOnce = false, writeSeq = 0;
+let crown = null, lastCrown = null;   // 1st place just changed hands (crown: play it once; lastCrown: keep it on the 速報 paper)
 
 /* ---------- chalk textures ---------- */
 function makeTextures() {
@@ -42,6 +43,7 @@ function makeTextures() {
     document.documentElement.style.setProperty("--chalk-mask", "url(" + m.toDataURL() + ")");
     const s = document.createElement("canvas"); s.width = 900; s.height = 520;
     const sc = s.getContext("2d"); sc.lineCap = "round";
+    lessonGhost(sc);
     for (let i = 0; i < 26; i++) {
       sc.strokeStyle = "rgba(240,239,231," + (0.012 + Math.random() * 0.025) + ")"; sc.lineWidth = 40 + Math.random() * 70;
       const a = Math.random() * 6; sc.beginPath(); sc.arc(Math.random() * 900, Math.random() * 520, 120 + Math.random() * 260, a, a + 0.6 + Math.random() * 1.2); sc.stroke();
@@ -56,8 +58,37 @@ function makeTextures() {
     return "url(" + s.toDataURL() + "), url(" + d.toDataURL() + ")";
   } catch (e) { return "none"; }
 }
-const BOARD_BG = makeTextures();
+/* what is left of the morning's economics lesson: a supply-and-demand sketch, half erased */
+function lessonGhost(c) {
+  const ink = "rgba(240,239,231,.07)";
+  c.save(); c.strokeStyle = ink; c.fillStyle = ink; c.lineWidth = 3; c.lineJoin = "round";
+  const ox = 590, oy = 470;
+  const seg = (pts) => { c.beginPath(); c.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) c.lineTo(pts[i], pts[i + 1]); c.stroke(); };
+  seg([ox, oy, ox, 236]); seg([ox - 6, 248, ox, 236, ox + 6, 248]);
+  seg([ox, oy, 872, oy]); seg([860, oy - 6, 872, oy, 860, oy + 6]);
+  c.beginPath(); c.moveTo(ox + 24, 270); c.quadraticCurveTo(ox + 120, 410, 846, 446); c.stroke();
+  c.beginPath(); c.moveTo(ox + 24, 452); c.quadraticCurveTo(ox + 150, 400, 836, 268); c.stroke();
+  c.setLineDash([6, 8]); c.lineWidth = 2;
+  seg([ox, 372, 714, 372]); seg([714, 372, 714, oy]);
+  c.setLineDash([]);
+  c.font = "24px 'Klee One', 'Yu Gothic', sans-serif";
+  c.fillText("価格", ox - 58, 252); c.fillText("数量", 836, oy + 32);
+  c.fillText("需要", 812, 432); c.fillText("供給", 806, 262);
+  c.font = "20px 'Klee One', 'Yu Gothic', sans-serif"; c.fillText("均衡点", 724, 360);
+  c.font = "30px 'Klee One', 'Yu Gothic', sans-serif"; c.fillText("③ 需要と供給", 600, 210);
+  c.font = "22px 'Klee One', 'Yu Gothic', sans-serif"; c.fillText("売上 ＝ 価格 × 数量", 40, 496);
+  // the eraser went over it once, not carefully
+  c.globalCompositeOperation = "destination-out";
+  for (let i = 0; i < 9; i++) {
+    c.strokeStyle = "rgba(0,0,0," + (0.35 + Math.random() * 0.4) + ")"; c.lineWidth = 34 + Math.random() * 30;
+    const y = 200 + i * 34 + Math.random() * 20; c.beginPath(); c.moveTo(560 + Math.random() * 40, y); c.bezierCurveTo(680, y - 20, 760, y + 24, 890, y - 6); c.stroke();
+  }
+  c.strokeStyle = "rgba(0,0,0,.5)"; c.lineWidth = 40; c.beginPath(); c.moveTo(20, 488); c.lineTo(330, 482); c.stroke();
+  c.restore();
+}
+let BOARD_BG = makeTextures();
 $("board").style.backgroundImage = BOARD_BG;
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { BOARD_BG = makeTextures(); $("board").style.backgroundImage = BOARD_BG; });
 
 /* ---------- hand-drawn marks ---------- */
 const NS = "http://www.w3.org/2000/svg";
@@ -133,7 +164,7 @@ function apply(list) {
     const prevTopId = topByDay[day];
     if (prevKnown && prevTopId !== top.id && fresh.has(top.id)) {
       const prevE = entries.find(e => e.id === prevTopId);
-      setTimeout(() => celebrate(top, prevE ? prevE.name : ""), 250);
+      crown = lastCrown = { id: top.id, prev: prevE ? { name: prevE.name, chips: prevE.chips } : null };
     }
     topByDay[day] = top.id;
   }
@@ -251,16 +282,21 @@ function render(force) {
     const li = document.createElement("li");
     li.className = "row chalk" + (rank <= 3 ? " r" + rank : "") + (isNew ? " writein" : "");
     li.style.transform = "rotate(" + ((rnd() - .5) * 1.3).toFixed(2) + "deg) translateX(" + Math.round(rnd() * 10) + "px)";
+    // the new 1st place waits while the eraser clears the old one
+    const crowning = isNew && i === 0 && crown && crown.id === e.id && !reduced();
+    const d0 = crowning ? 1100 : 0;
+    li.style.setProperty("--d", d0 + "ms");
+    if (isNew) { const tip = document.createElement("i"); tip.className = "tip"; tip.setAttribute("aria-hidden", "true"); li.appendChild(tip); trayTake("c1", d0 + 1800); }
 
     const r = document.createElement("div"); r.className = "rank w"; r.textContent = rank;
     if (rank === 1) {
-      const c = svgMark(pathFrom(circlePts(rnd, 50, 50, 40, 40)), "var(--chalk-yellow)", 3.4, "0 0 100 100"); r.appendChild(c); if (isNew) drawIn(c, 700, 900);
+      const c = svgMark(pathFrom(circlePts(rnd, 50, 50, 40, 40)), "var(--chalk-yellow)", 3.4, "0 0 100 100"); r.appendChild(c); if (isNew) drawIn(c, 700, d0 + 1800);
       r.appendChild(svgMark("M4 34 L10 8 L22 26 L32 2 L42 26 L54 8 L60 34 Z", "var(--chalk-yellow)", 2.6, "0 0 64 36", "crown"));
     } else if (rank <= 3) {
-      const c = svgMark(pathFrom(circlePts(rnd, 50, 50, 40, 40)), rank === 2 ? "var(--chalk-pink)" : "var(--chalk-blue)", 3, "0 0 100 100"); r.appendChild(c); if (isNew) drawIn(c, 600, 900);
+      const c = svgMark(pathFrom(circlePts(rnd, 50, 50, 40, 40)), rank === 2 ? "var(--chalk-pink)" : "var(--chalk-blue)", 3, "0 0 100 100"); r.appendChild(c); if (isNew) drawIn(c, 600, d0 + 1800);
     }
     const nm = document.createElement("div"); nm.className = "name w";
-    const nmT = document.createElement("span"); nmT.className = "nm"; nmT.textContent = e.name;
+    const nmT = document.createElement("span"); nmT.className = "nm"; handText(nmT, e.name, rnd);
     nm.append(nmT);
     if (justNow) { const s = document.createElement("span"); s.className = "scrib now"; s.textContent = "いま来た！"; nm.appendChild(s); }
     else if (i === 0 && filter === today() && now - e.createdAt >= 60000) { const s = document.createElement("span"); s.className = "scrib keep"; s.textContent = "首位キープ " + duration(now - e.createdAt); nm.appendChild(s); }
@@ -268,13 +304,16 @@ function render(force) {
     if (filter === "all") { const s = document.createElement("span"); s.className = "scrib date"; s.textContent = fmtShort(e.date); nm.appendChild(s); }
     const lead = document.createElement("span"); lead.className = "leader"; nm.appendChild(lead);
     const ct = document.createElement("div"); ct.className = "count w";
-    ct.append(String(e.chips)); const u = document.createElement("small"); u.textContent = "枚"; ct.appendChild(u);
+    const num = document.createElement("span"); handText(num, String(e.chips), rnd); ct.appendChild(num);
+    const u = document.createElement("small"); u.textContent = "枚"; ct.appendChild(u);
     if (rank <= 3) { const m = document.createElement("span"); m.className = "mult"; m.textContent = "スタートの" + times(e.chips) + "倍"; ct.appendChild(m); }
-    if (rank === 1) { const h = svgMark(pathFrom(hanamaruPts(rnd)), "var(--chalk-pink)", 2.6, "0 0 100 100", "hanamaru"); h.setAttribute("preserveAspectRatio", "xMidYMid meet"); ct.appendChild(h); if (isNew || !drewOnce) drawIn(h, 1600, isNew ? 1100 : 300); }
+    if (rank === 1) { const h = svgMark(pathFrom(hanamaruPts(rnd)), "var(--chalk-pink)", 2.6, "0 0 100 100", "hanamaru"); h.setAttribute("preserveAspectRatio", "xMidYMid meet"); ct.appendChild(h); if (isNew || !drewOnce) drawIn(h, 1600, isNew ? d0 + 1900 : 300); }
     if (isAdmin && pass) ct.appendChild(delButton(e));
     li.append(r, nm, ct);
     ol.appendChild(li);
+    if (crowning) crownSequence(li, crown.prev);
   });
+  crown = null;
   $("restWrap").hidden = list.length <= TOP_N;
   $("restHead").textContent = "── " + (TOP_N + 1) + "位から下 ──";
 
@@ -292,7 +331,9 @@ function renderNews(list) {
   if (!byTime.length) return;
   const n = byTime[0];
   $("paperNth").textContent = filter === "all" ? "" : (filter === today() ? "今日 " : "") + byTime.length + "人目";
-  $("paperBig").textContent = hhmm(n.createdAt) + "　" + n.name + " さん " + n.chips + "枚 → " + rankOf(list, n) + "位に！";
+  $("paperBig").textContent = (lastCrown && lastCrown.id === n.id && lastCrown.prev)
+    ? hhmm(n.createdAt) + "　首位交代！ " + lastCrown.prev.name + " " + lastCrown.prev.chips + "枚 → " + n.name + " さん " + n.chips + "枚"
+    : hhmm(n.createdAt) + "　" + n.name + " さん " + n.chips + "枚 → " + rankOf(list, n) + "位に！";
   const ul = $("paperList"); ul.textContent = "";
   byTime.slice(1, 3).forEach(e => { const li = document.createElement("li"); li.textContent = hhmm(e.createdAt) + "　" + e.name + "　" + e.chips + "枚（" + rankOf(list, e) + "位）"; ul.appendChild(li); });
   if (fresh.has(n.id) && !reduced()) { paper.classList.remove("pop"); void paper.offsetWidth; paper.classList.add("pop"); }
@@ -382,41 +423,57 @@ function delButton(e) {
   return del;
 }
 
-/* ---------- 1st-place moment ---------- */
-function celebrate(e, prevName) {
-  if (document.querySelector(".celebrate")) return;
-  const ov = document.createElement("div"); ov.className = "celebrate"; ov.style.backgroundImage = BOARD_BG;
-  ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "新しい1位");
-  ov.innerHTML = '<canvas></canvas><div class="eraser-sweep"></div><div class="inner"><div class="kicker chalk"></div><div class="headline chalk">新・億万長者 誕生</div><div class="who chalk"></div><div class="sub chalk"></div></div>';
-  ov.querySelector(".kicker").textContent = prevName ? prevName + " さんを抜いて…" : "1位が決まりました";
-  const who = ov.querySelector(".who"); who.textContent = e.name + " さん " + e.chips + "枚";
-  const c = svgMark(pathFrom(circlePts(seeded(e.id + "c"), 50, 50, 48, 46)), "var(--chalk-yellow)", 4, "0 0 100 100"); who.appendChild(c);
-  ov.querySelector(".sub").textContent = "スタートの " + times(e.chips) + " 倍。おめでとう！";
-  document.body.appendChild(ov);
-  drawIn(c, 900, 3600);
-  if (!reduced()) chalkDust(ov.querySelector("canvas"), 3700);
-  let closed = false;
-  const close = () => { if (closed) return; closed = true; ov.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: "forwards" }).onfinish = () => ov.remove(); };
-  ov.onclick = close;
-  setTimeout(close, isAdmin ? 5000 : 9000);
+/* ---------- handwriting: no two characters sit quite the same ---------- */
+function handText(el, s, rnd) {
+  el.setAttribute("aria-label", s);
+  for (const ch of s) {
+    const sp = document.createElement("span"); sp.className = "ch"; sp.setAttribute("aria-hidden", "true"); sp.textContent = ch;
+    sp.style.transform = "rotate(" + ((rnd() - .5) * 6).toFixed(1) + "deg) translateY(" + ((rnd() - .5) * .09).toFixed(3) + "em)";
+    el.appendChild(sp);
+  }
 }
-function chalkDust(cv, delay) {
-  const ctx = cv.getContext("2d"); const dpr = Math.min(2, window.devicePixelRatio || 1);
-  const resize = () => { cv.width = cv.clientWidth * dpr; cv.height = cv.clientHeight * dpr; };
-  resize();
-  const colors = ["240,239,231", "242,220,109", "241,163,166", "159,203,232"];
-  let parts = [];
+
+/* a piece is picked up from the chalk tray while it is in use */
+function trayTake(which, ms) {
+  const el = document.querySelector(".tray ." + which); if (!el || reduced()) return;
+  el.classList.add("out"); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("out"), ms + 300);
+}
+
+/* ---------- 1st place changes hands: erased and rewritten on the board itself ---------- */
+function crownSequence(li, prev) {
+  const D = 1100, board = $("board");
+  const b = board.getBoundingClientRect(), r = li.getBoundingClientRect();
+  if (prev) {
+    const ghost = document.createElement("div"); ghost.className = "ghost"; ghost.setAttribute("aria-hidden", "true");
+    const gn = document.createElement("span"); gn.textContent = prev.name;
+    const gc = document.createElement("span"); gc.textContent = prev.chips + "枚";
+    ghost.append(gn, gc); li.appendChild(ghost);
+    ghost.animate([{ clipPath: "inset(0 0 0 0)" }, { clipPath: "inset(0 0 0 100%)" }], { duration: D - 150, delay: 120, easing: "ease-in-out", fill: "forwards" }).onfinish = () => ghost.remove();
+  }
+  const smear = document.createElement("div"); smear.className = "smear"; smear.setAttribute("aria-hidden", "true"); li.appendChild(smear);
+  smear.animate([{ opacity: 0 }, { opacity: 1, offset: .12 }, { opacity: .6, offset: .5 }, { opacity: 0 }], { duration: 9000, fill: "forwards" }).onfinish = () => smear.remove();
+
+  const er = document.createElement("div"); er.className = "eraser-hand"; er.setAttribute("aria-hidden", "true");
+  er.style.top = (r.top - b.top + r.height / 2 - 26) + "px";
+  board.appendChild(er);
+  const x0 = r.left - b.left - 150, x1 = r.right - b.left + 20;
+  er.animate([
+    { transform: "translateX(" + x0 + "px) rotate(-7deg)" },
+    { transform: "translateX(" + (x0 + (x1 - x0) * .45) + "px) translateY(6px) rotate(2deg)", offset: .45 },
+    { transform: "translateX(" + (x0 + (x1 - x0) * .7) + "px) translateY(-4px) rotate(-3deg)", offset: .7 },
+    { transform: "translateX(" + x1 + "px) rotate(4deg)" }
+  ], { duration: D, easing: "ease-in-out", fill: "forwards" }).onfinish = () => er.remove();
+  trayTake("eraser", D);
+
   setTimeout(() => {
-    const w = cv.width, h = cv.height;
-    for (let i = 0; i < 220; i++) parts.push({ x: w / 2 + (Math.random() - .5) * w * .5, y: h * .55 + (Math.random() - .5) * h * .1, vx: (Math.random() - .5) * 7 * dpr, vy: (-Math.random() * 7 - 2) * dpr, r: (1 + Math.random() * 2.6) * dpr, c: colors[i % 4], a: 1 });
-    const step = () => {
-      ctx.clearRect(0, 0, w, h);
-      parts = parts.filter(p => p.a > 0.02);
-      for (const p of parts) { p.x += p.vx; p.y += p.vy; p.vy += 0.16 * dpr; p.vx *= 0.985; p.a *= 0.985; ctx.fillStyle = "rgba(" + p.c + "," + p.a + ")"; ctx.fillRect(p.x, p.y, p.r, p.r); }
-      if (parts.length && cv.isConnected) requestAnimationFrame(step);
-    };
-    step();
-  }, delay);
+    const ct = li.querySelector(".count"); if (!ct || !li.isConnected) return;
+    const s = document.createElement("span"); s.className = "shinkiroku";
+    const t = document.createElement("span"); t.textContent = "新記録！";
+    const arrow = svgMark("M2 6 C 16 8, 30 16, 44 30 M32 30 L44 30 L44 18", "var(--chalk-yellow)", 2.4, "0 0 48 34", "arrow");
+    s.append(t, arrow); ct.appendChild(s);
+    t.animate([{ clipPath: "inset(-40% 100% -40% -40%)" }, { clipPath: "inset(-40% -40% -40% -40%)" }], { duration: 650, easing: "steps(8, end)", fill: "backwards" });
+    drawIn(arrow, 450, 650);
+  }, D + 2600);
 }
 
 /* ---------- admin ---------- */
