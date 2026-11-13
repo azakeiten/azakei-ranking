@@ -29,6 +29,7 @@
     <div class="clock" id="clock" aria-label="現在時刻"><i class="h" id="hh"></i><i class="m" id="mm"></i><i class="s" id="sec"></i><b></b></div>
     <div class="wall-right">
       <span id="adminBar" hidden class="admin-tag">管理者ページ</span>
+      <button class="btn" id="soundBtn" type="button" aria-pressed="false" hidden>音：なし</button>
       <button class="btn" id="fsBtn" type="button">全画面で映す</button>
     </div>
   </div>
@@ -60,6 +61,11 @@
                 <div class="big" id="paperBig"></div>
                 <ul id="paperList"></ul>
               </div>
+              <div class="paper fame" id="fame" hidden>
+                <span class="magnet c"></span>
+                <h3>歴代の億万長者</h3>
+                <ol id="fameList"></ol>
+              </div>
               <div class="aim chalk" id="aim" hidden>
                 <div class="aim-title">ランクインするには？</div>
                 <dl id="aimList"></dl>
@@ -74,6 +80,17 @@
                 <div class="qr-text"><b>スマホでも見られる</b><span>azakeiten.github.io<br>/azakei-ranking/</span></div>
               </div>
             </aside>
+          </div>
+
+          <div class="lower" id="lower" hidden>
+            <section class="hours chalk" id="hours">
+              <h4>時間ごとの挑戦者</h4>
+              <dl id="hoursList"></dl>
+            </section>
+            <section class="memo chalk" id="memo" hidden>
+              <h4>経済メモ</h4>
+              <ul id="memoList"></ul>
+            </section>
           </div>
 
           <div class="rule chalk">スタートは <span class="y">5枚</span>。<span class="p">40枚をこえたら シャーペン</span> をプレゼント！</div>

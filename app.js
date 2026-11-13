@@ -9,6 +9,8 @@ const DEMO = /[?&]demo\b/.test(location.search);
 const PAGE_URL = "https://azakeiten.github.io/azakei-ranking/";
 const START = 5, PRIZE = 40, TOP_N = 10, NOW_MIN = 10;
 const POLL_MS = 7000;
+const LAST_YEAR = Math.max(0, Number(CFG.lastYearBest) || 0);   // 去年の1位の枚数
+const MILESTONE = 50;                                           // 号外を出す人数の区切り
 
 const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
 const $ = (id) => document.getElementById(id);
@@ -168,7 +170,23 @@ function apply(list) {
     }
     topByDay[day] = top.id;
   }
+
+  // 号外: last year's record falls, or today reaches a round number of challengers
+  let extra = null;
+  if (prevKnown && fresh.size) {
+    const fr = list.filter(e => fresh.has(e.id));
+    const oldBest = list.filter(e => !fresh.has(e.id)).reduce((m, e) => Math.max(m, e.chips), 0);
+    const breaker = LAST_YEAR ? fr.filter(e => e.chips > LAST_YEAR).sort((a, b) => b.chips - a.chips)[0] : null;
+    const nToday = list.filter(e => e.date === today()).length, nBefore = nToday - fr.filter(e => e.date === today()).length;
+    if (breaker && oldBest <= LAST_YEAR) extra = { kind: "record", e: breaker };
+    else if (Math.floor(nToday / MILESTONE) > Math.floor(nBefore / MILESTONE)) {
+      const n = Math.floor(nToday / MILESTONE) * MILESTONE;
+      extra = { kind: "count", n, total: list.filter(e => e.date === today()).reduce((s, e) => s + e.chips, 0), given: nToday * START };
+    }
+  }
+  const crowned = !!crown;
   render();
+  if (extra) setTimeout(() => gogai(extra), crowned ? 5200 : 2200);
 }
 
 async function load() {
@@ -263,7 +281,7 @@ function render(force) {
   const ol = $("list"); ol.textContent = "";
   const rest = $("rest"); rest.textContent = "";
   const now = Date.now();
-  let rank = 0, prev = null;
+  let rank = 0, prev = null, chalkHeard = false;
   list.forEach((e, i) => {
     if (e.chips !== prev) { rank = i + 1; prev = e.chips; }
     const rnd = seeded(e.id);
@@ -286,7 +304,10 @@ function render(force) {
     const crowning = isNew && i === 0 && crown && crown.id === e.id && !reduced();
     const d0 = crowning ? 1100 : 0;
     li.style.setProperty("--d", d0 + "ms");
-    if (isNew) { const tip = document.createElement("i"); tip.className = "tip"; tip.setAttribute("aria-hidden", "true"); li.appendChild(tip); trayTake("c1", d0 + 1800); }
+    if (isNew) {
+      const tip = document.createElement("i"); tip.className = "tip"; tip.setAttribute("aria-hidden", "true"); li.appendChild(tip); trayTake("c1", d0 + 1800);
+      if (!chalkHeard) { chalkHeard = true; Sound.chalk(d0, 1750); }
+    }
 
     const r = document.createElement("div"); r.className = "rank w"; r.textContent = rank;
     if (rank === 1) {
@@ -320,6 +341,9 @@ function render(force) {
   renderNews(list);
   renderAim(list);
   renderChart(list);
+  renderFame();
+  renderHours(list);
+  renderMemo(list);
   fresh = new Set(); // animate each arrival once
   if (list.length) drewOnce = true;
 }
@@ -354,6 +378,7 @@ function renderAim(list) {
   if (list.length >= 3) rows.push(["3位", list[2].chips]);
   if (list.length >= TOP_N) rows.push([TOP_N + "位", list[TOP_N - 1].chips]);
   rows.push(["シャーペン", PRIZE + 1, "pz"]);
+  if (LAST_YEAR) rows.push(["去年の1位こえ", LAST_YEAR + 1, "ly"]);
   for (const [label, n, cls] of rows) {
     const wrap = document.createElement("div"); wrap.style.display = "contents"; if (cls) wrap.className = cls;
     const dt = document.createElement("dt"); dt.textContent = label;
@@ -372,7 +397,7 @@ function renderChart(list) {
   const t0 = day[0].createdAt, isToday = filter === today();
   const t1 = Math.max(day[day.length - 1].createdAt, isToday ? Date.now() : 0, t0 + 30 * 60000);
   const maxV = Math.max(...day.map(e => e.chips));
-  const yMax = Math.max(10, Math.ceil(maxV * 1.15 / 10) * 10);
+  const yMax = Math.max(10, Math.ceil(Math.max(maxV, LAST_YEAR) * 1.15 / 10) * 10);
   const X = (t) => L + (t - t0) / (t1 - t0) * (W - L - R);
   const Y = (v) => H - B - v / yMax * (H - T - B);
   const rnd = seeded("chart" + filter);
@@ -403,6 +428,10 @@ function renderChart(list) {
   text(L - 5, T + 4, String(yMax), "end", "var(--chalk-dim)");
   text(L - 5, H - B + 3, "0", "end", "var(--chalk-dim)");
   if (PRIZE < yMax) text(W - R, Y(PRIZE) - 4, "シャーペンライン", "end", "var(--chalk-pink)", 10);
+  if (LAST_YEAR) {
+    const ly = pathEl(pathFrom(wobbleLine(rnd, L, Y(LAST_YEAR), W - R, Y(LAST_YEAR))), "var(--chalk-yellow)", 1.2); ly.setAttribute("stroke-dasharray", "8 5"); g.appendChild(ly);
+    text(L + 4, Y(LAST_YEAR) - 4, "去年の1位 " + LAST_YEAR, "start", "var(--chalk-yellow)", 10);
+  }
   text(L, H - 8, hhmm(t0), "start", "var(--chalk-dim)");
   text(W - R, H - 8, isToday ? "いま" : hhmm(t1), "end", "var(--chalk-dim)");
   if (fresh.size) drawIn({ querySelector: () => line }, 1200, 200);
@@ -422,6 +451,180 @@ function delButton(e) {
   };
   return del;
 }
+
+/* ---------- 歴代の億万長者: each day's 1st place, pinned as a paper ---------- */
+function renderFame() {
+  const dates = [...new Set(entries.map(e => e.date))].sort();
+  const box = $("fame");
+  if (dates.length < 2) { box.hidden = true; return; }
+  box.hidden = false;
+  const ol = $("fameList"); ol.textContent = "";
+  const best = Math.max(...entries.map(e => e.chips));
+  for (const d of dates) {
+    const top = ranked(d)[0]; if (!top) continue;
+    const li = document.createElement("li");
+    const a = document.createElement("span"); a.className = "fd"; a.textContent = fmtShort(d);
+    const b = document.createElement("span"); b.className = "fn"; b.textContent = top.name;
+    const c = document.createElement("span"); c.className = "fc"; c.textContent = top.chips + "枚" + (d === today() ? "（暫定）" : "");
+    li.append(a, b, c);
+    if (top.chips === best) li.classList.add("best");
+    ol.appendChild(li);
+  }
+}
+
+/* ---------- 正の字: challengers per hour, counted the way it is done on any school board ---------- */
+const SEI = ["", "一", "丅", "下", "止", "正"];
+function renderHours(list) {
+  const lower = $("lower");
+  const day = filter === "all" ? [] : list.filter(e => e.createdAt);
+  if (day.length < 3) { lower.hidden = true; return; }
+  lower.hidden = false;
+  const by = new Map();
+  for (const e of day) { const h = new Date(e.createdAt).getHours(); by.set(h, (by.get(h) || 0) + 1); }
+  const hours = [...by.keys()].sort((a, b) => a - b), max = Math.max(...by.values());
+  const dl = $("hoursList"); dl.textContent = "";
+  for (const h of hours) {
+    const n = by.get(h), rnd = seeded("h" + h + filter);
+    const dt = document.createElement("dt"); dt.textContent = h + "時台";
+    const dd = document.createElement("dd");
+    const marks = document.createElement("span"); marks.className = "sei";
+    handText(marks, "正".repeat(Math.floor(n / 5)) + SEI[n % 5], rnd);
+    marks.setAttribute("aria-label", n + "人");
+    const num = document.createElement("small"); num.textContent = n + "人";
+    dd.append(marks, num);
+    if (n === max && hours.length > 1) { const s = document.createElement("span"); s.className = "scrib busy"; s.textContent = "← いちばん混んだ"; dd.appendChild(s); }
+    dl.append(dt, dd);
+  }
+}
+
+/* ---------- 経済メモ: what the day's numbers say, written up like a lesson ---------- */
+function renderMemo(list) {
+  const box = $("memo");
+  if (filter === "all" || list.length < 5) { box.hidden = true; return; }
+  box.hidden = false;
+  const chips = list.map(e => e.chips).sort((a, b) => a - b), n = chips.length;
+  const total = chips.reduce((s, v) => s + v, 0);
+  const up = chips.filter(v => v > START).length;
+  const mid = n % 2 ? chips[(n - 1) / 2] : (chips[n / 2 - 1] + chips[n / 2]) / 2;
+  const mean = total / n;
+  const k = Math.max(1, Math.round(n * 0.1));
+  const topShare = chips.slice(-k).reduce((s, v) => s + v, 0) / (total || 1);
+  const r1 = (v) => Math.round(v * 10) / 10;
+  const lines = [
+    ["スタートより増やせた人", Math.round(up / n * 100) + "%"],
+    ["真ん中の人（中央値）", r1(mid) + "枚"],
+    ["みんなの平均", r1(mean) + "枚"],
+    ["上位1割（" + k + "人）の取り分", "全チップの " + Math.round(topShare * 100) + "%"],
+    ["配ったチップ " + (n * START) + "枚 →", "いま " + total + "枚（×" + r1(total / (n * START)) + "）"]
+  ];
+  const ul = $("memoList"); ul.textContent = "";
+  for (const [a, b] of lines) {
+    const li = document.createElement("li");
+    const s1 = document.createElement("span"); s1.className = "ml"; s1.textContent = a;
+    const s2 = document.createElement("span"); s2.className = "mv"; s2.textContent = b;
+    li.append(s1, s2); ul.appendChild(li);
+  }
+  if (mean > mid * 1.3) {
+    const li = document.createElement("li"); li.className = "aside-note";
+    li.textContent = "平均 ＞ 中央値 … 一部の人が大きく稼いでいる（格差）";
+    ul.appendChild(li);
+  }
+}
+
+/* ---------- 号外: a printed extra slapped onto the board with a magnet ---------- */
+function vText(el, s) {
+  s.split(/(\d+)/).forEach(p => { if (!p) return; if (/^\d{1,3}$/.test(p)) { const t = document.createElement("span"); t.className = "tcy"; t.textContent = p; el.appendChild(t); } else el.append(p); });
+}
+function gogai(g) {
+  const board = $("board");
+  const old = board.querySelector(".gogai"); if (old) old.remove();
+  const p = document.createElement("div"); p.className = "gogai" + (g.kind === "count" ? " small" : ""); p.setAttribute("role", "status");
+  p.innerHTML = '<span class="magnet c"></span><div class="gg-head"><b>号外</b><span class="gg-date"></span></div><div class="gg-cols"><div class="gg-title"></div><div class="gg-body"></div></div><div class="gg-foot">AZAKEI 麻布経済展</div>';
+  p.querySelector(".gg-date").textContent = fmtLong(today()) + "　" + hhmm(Date.now()) + " 発行";
+  const title = p.querySelector(".gg-title"), body = p.querySelector(".gg-body");
+  if (g.kind === "record") {
+    vText(title, "去年の記録、破れる");
+    vText(body, g.e.name + "さん " + g.e.chips + "枚。去年の1位（" + LAST_YEAR + "枚）を" + (g.e.chips - LAST_YEAR) + "枚上回る");
+  } else {
+    vText(title, "挑戦者、" + g.n + "人に");
+    vText(body, "配ったチップ" + g.given + "枚が、いま合計" + g.total + "枚に");
+  }
+  board.appendChild(p);
+  const stay = g.kind === "record" ? 45000 : 16000;
+  if (!reduced()) {
+    p.animate([
+      { transform: "translateY(-130%) rotate(-14deg)", opacity: 0 },
+      { transform: "translateY(6%) rotate(1deg)", opacity: 1, offset: .75 },
+      { transform: "translateY(0) rotate(-2.5deg)", opacity: 1 }
+    ], { duration: 750, easing: "cubic-bezier(.3,.7,.4,1)", fill: "backwards" });
+    p.querySelector(".magnet").animate([{ transform: "scale(1.7)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 160, delay: 720, easing: "ease-in", fill: "backwards" });
+  }
+  Sound.paper(0); Sound.pin(720);
+  let gone = false;
+  const away = () => {
+    if (gone) return; gone = true;
+    if (reduced()) { p.remove(); return; }
+    p.animate([{ transform: "rotate(-2.5deg)", opacity: 1 }, { transform: "translateY(40%) rotate(6deg)", opacity: 0 }], { duration: 600, easing: "ease-in", fill: "forwards" }).onfinish = () => p.remove();
+  };
+  p.addEventListener("click", away);
+  setTimeout(away, stay);
+}
+
+/* ---------- sound: chalk taps, an eraser stroke, a magnet hitting the board (off until switched on) ---------- */
+const Sound = (() => {
+  const quiet = { chalk() {}, eraser() {}, pin() {}, paper() {} };
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const btn = $("soundBtn");
+  if (!AC) return quiet;
+  let ctx = null, buf = null, on = ls.get("azakei-sound") === "1";
+  btn.hidden = false;
+  const label = () => { btn.textContent = on ? "音：あり" : "音：なし"; btn.setAttribute("aria-pressed", String(on)); };
+  label();
+  const ensure = () => { try { if (!ctx) ctx = new AC(); if (ctx.state === "suspended") ctx.resume(); } catch (e) {} return ctx; };
+  const ready = () => on && ctx && ctx.state === "running" && !reduced();
+  const noise = () => {
+    if (buf) return buf;
+    buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 1.6), ctx.sampleRate);
+    const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return buf;
+  };
+  function burst(t, dur, freq, q, gain, type) {
+    const s = ctx.createBufferSource(); s.buffer = noise();
+    const f = ctx.createBiquadFilter(); f.type = type || "bandpass"; f.frequency.value = freq; f.Q.value = q;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(gain, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+    s.connect(f); f.connect(g); g.connect(ctx.destination);
+    s.start(t, Math.random() * 1.2); s.stop(t + dur + 0.03);
+  }
+  const tap = (t) => { burst(t, 0.03 + Math.random() * 0.03, 2400 + Math.random() * 2000, 1.4, 0.2); };
+  btn.onclick = () => { on = !on; ls.set("azakei-sound", on ? "1" : "0"); label(); if (on && ensure()) setTimeout(() => { if (ready()) tap(ctx.currentTime + 0.02); }, 60); };
+  document.addEventListener("pointerdown", () => { if (on) ensure(); }, { passive: true });
+  document.addEventListener("keydown", () => { if (on) ensure(); });
+  return {
+    chalk(delayMs, ms) {
+      if (!ready()) return;
+      let t = ctx.currentTime + delayMs / 1000; const end = t + ms / 1000;
+      while (t < end) { tap(t); if (Math.random() < 0.45) burst(t + 0.012, 0.08, 1500 + Math.random() * 900, 0.9, 0.045); t += 0.07 + Math.random() * 0.12; }
+    },
+    eraser(delayMs, ms) {
+      if (!ready()) return;
+      const t = ctx.currentTime + delayMs / 1000, T = ms / 1000;
+      const s = ctx.createBufferSource(); s.buffer = noise();
+      const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 0.7;
+      f.frequency.setValueAtTime(650, t); f.frequency.linearRampToValueAtTime(1250, t + T * 0.45); f.frequency.linearRampToValueAtTime(800, t + T);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.16, t + 0.12); g.gain.setValueAtTime(0.14, t + T - 0.2); g.gain.linearRampToValueAtTime(0, t + T);
+      s.connect(f); f.connect(g); g.connect(ctx.destination); s.start(t); s.stop(t + T + 0.05);
+    },
+    paper(delayMs) { if (!ready()) return; const t = ctx.currentTime + delayMs / 1000; for (let i = 0; i < 5; i++) burst(t + i * 0.09 + Math.random() * 0.04, 0.12, 3200 + Math.random() * 2500, 0.6, 0.05, "highpass"); },
+    pin(delayMs) {
+      if (!ready()) return;
+      const t = ctx.currentTime + delayMs / 1000;
+      const o = ctx.createOscillator(); o.type = "triangle"; o.frequency.setValueAtTime(190, t); o.frequency.exponentialRampToValueAtTime(70, t + 0.09);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+      o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 0.16);
+      burst(t, 0.03, 4200, 1, 0.12);
+    }
+  };
+})();
 
 /* ---------- handwriting: no two characters sit quite the same ---------- */
 function handText(el, s, rnd) {
@@ -464,6 +667,7 @@ function crownSequence(li, prev) {
     { transform: "translateX(" + x1 + "px) rotate(4deg)" }
   ], { duration: D, easing: "ease-in-out", fill: "forwards" }).onfinish = () => er.remove();
   trayTake("eraser", D);
+  Sound.eraser(0, D);
 
   setTimeout(() => {
     const ct = li.querySelector(".count"); if (!ct || !li.isConnected) return;
@@ -473,6 +677,7 @@ function crownSequence(li, prev) {
     s.append(t, arrow); ct.appendChild(s);
     t.animate([{ clipPath: "inset(-40% 100% -40% -40%)" }, { clipPath: "inset(-40% -40% -40% -40%)" }], { duration: 650, easing: "steps(8, end)", fill: "backwards" });
     drawIn(arrow, 450, 650);
+    Sound.chalk(0, 1000);
   }, D + 2600);
 }
 
@@ -524,10 +729,16 @@ function demoPost(body) {
 if (DEMO) {
   const names = ["たろう", "はなこ", "けんた", "ゆうき", "さくら", "そうま", "りん", "はると", "あおい", "みなと", "ひなた", "こはる", "いつき"];
   const chips = [96, 86, 64, 41, 33, 28, 22, 18, 15, 12, 9, 7, 5];
-  const base = Date.now() - 4 * 3600000;
-  demoList = names.map((n, i) => ({ id: "s" + i, name: n, chips: chips[i], date: today(), createdAt: base + ((i * 7) % 13) * 17 * 60000 }));
+  const now0 = Date.now(), y = new Date(now0 - 86400000);
+  const yesterday = y.getFullYear() + "-" + pad(y.getMonth() + 1) + "-" + pad(y.getDate());
+  // today: spread over the last few hours, busiest in the middle
+  const offsets = [215, 190, 172, 150, 141, 133, 118, 104, 96, 88, 61, 40, 22];
+  demoList = names.map((n, i) => ({ id: "s" + i, name: n, chips: chips[(i * 5) % 13], date: today(), createdAt: now0 - offsets[i] * 60000 }));
+  // yesterday's board, for 歴代の億万長者
+  [["そら", 88], ["れん", 54], ["ゆな", 31], ["かい", 12], ["めい", 6]].forEach(([n, c], i) => demoList.push({ id: "y" + i, name: n, chips: c, date: yesterday, createdAt: now0 - 86400000 - i * 1800000 }));
   apply(demoList.slice());
-  setTimeout(() => { demoList.push({ id: "s-new", name: "ゆいと", chips: 120, date: today(), createdAt: Date.now() }); apply(demoList.slice()); }, 6000);
+  // a new leader who also beats last year's record → eraser, 新記録, then 号外
+  setTimeout(() => { demoList.push({ id: "s-new", name: "ゆいと", chips: Math.max(LAST_YEAR + 12, 132), date: today(), createdAt: Date.now() }); apply(demoList.slice()); }, 6000);
 } else {
   render(true);
   load().then(schedule);
