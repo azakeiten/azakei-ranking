@@ -244,7 +244,7 @@ function render(force) {
   $("passBox").hidden = !!pass; $("entryBox").hidden = !pass; $("forget").hidden = !pass;
 
   if (show) return; // the board is frozen while results are being announced
-  const sig = JSON.stringify([entries, filter, isAdmin, !!pass, busy, pendingDel, Math.floor(Date.now() / 60000)]);
+  const sig = JSON.stringify([entries, filter, isAdmin, !!pass, busy, pendingDel, findQ, Math.floor(Date.now() / 60000)]);
   if (!force && sig === lastSig) return;
   lastSig = sig;
 
@@ -291,6 +291,7 @@ function render(force) {
     const justNow = filter !== "all" && now - e.createdAt < NOW_MIN * 60000;
     if (i >= TOP_N) {
       const li = document.createElement("li"); if (isNew) li.className = "writein-row";
+      if (matches(e)) li.classList.add("found");
       const rk = document.createElement("span"); rk.className = "rk"; rk.textContent = rank + "位";
       const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = e.name;
       const ct = document.createElement("span"); ct.className = "ct"; ct.textContent = e.chips + "枚";
@@ -302,6 +303,7 @@ function render(force) {
     const li = document.createElement("li");
     li.className = "row chalk" + (rank <= 3 ? " r" + rank : "") + (isNew ? " writein" : "");
     li.dataset.rank = rank;
+    if (matches(e)) li.classList.add("found");
     li.style.transform = "rotate(" + ((rnd() - .5) * 1.3).toFixed(2) + "deg) translateX(" + Math.round(rnd() * 10) + "px)";
     // the new 1st place waits while the eraser clears the old one
     const crowning = isNew && i === 0 && crown && crown.id === e.id && !reduced();
@@ -347,6 +349,8 @@ function render(force) {
   renderFame();
   renderHours(list);
   renderMemo(list);
+  renderFinder(list);
+  renderDust();
   fresh = new Set(); // animate each arrival once
   if (list.length) drewOnce = true;
 }
@@ -454,6 +458,62 @@ function delButton(e) {
   };
   return del;
 }
+
+/* ---------- 名前でさがす: a visitor finds their own line ---------- */
+let findQ = "";
+const norm = (s) => String(s || "").normalize("NFKC").toLowerCase().replace(/\s+/g, "");
+function matches(e) { return !!findQ && norm(e.name).includes(norm(findQ)); }
+function renderFinder(list) {
+  const box = $("finder"), out = $("findResult");
+  box.hidden = list.length < 4;
+  if (!findQ) { out.textContent = ""; return; }
+  const hit = list.filter(matches);
+  if (!hit.length) { out.textContent = "見つかりません" + (filter !== "all" ? "（日付を変えてみてね）" : ""); return; }
+  const e = hit[0];
+  out.textContent = rankOf(list, e) + "位　" + e.name + "　" + e.chips + "枚" + (hit.length > 1 ? "（ほか" + (hit.length - 1) + "人）" : "");
+}
+$("findName").addEventListener("input", (ev) => {
+  findQ = ev.target.value.trim();
+  render(true);
+  const first = document.querySelector(".row.found, .rest li.found");
+  if (first) first.scrollIntoView({ block: "center", behavior: reduced() ? "auto" : "smooth" });
+});
+
+/* ---------- chalk dust in the tray: more challengers, more dust ---------- */
+let dustCount = -1;
+function renderDust() {
+  const n = Math.min(90, entries.filter(e => e.date === liveDay()).length * 2);
+  if (n === dustCount) return; dustCount = n;
+  const box = $("dust"); box.textContent = "";
+  const rnd = seeded("dust");
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement("i");
+    const w = 2 + rnd() * 7;
+    s.style.left = (3 + rnd() * 94).toFixed(2) + "%"; s.style.width = w.toFixed(1) + "px";
+    s.style.opacity = (0.35 + rnd() * 0.6).toFixed(2); s.style.bottom = (rnd() * 2).toFixed(1) + "px";
+    box.appendChild(s);
+  }
+}
+
+/* ---------- 落書き: a stack of chips someone drew in the corner ---------- */
+(() => {
+  const r = seeded("doodle"); const j = () => ((r() - .5) * 1.6).toFixed(1);
+  let d = "";
+  for (let k = 0; k < 4; k++) {
+    const y = 74 - k * 12, x0 = 14 + k * 1.5, x1 = 74 + k * 1.5;
+    d += `M${x0} ${y} C ${x0 + 4} ${y + 10 + +j()}, ${x1 - 4} ${y + 10}, ${x1} ${y} `;
+    d += `M${x0} ${y} L${x0 + +j()} ${y - 8} M${x1} ${y} L${x1} ${y - 8} `;
+    for (let s = 0; s < 3; s++) { const sx = x0 + 14 + s * 16; d += `M${sx} ${y + 5} L${sx + 2} ${y - 2} `; }
+  }
+  const ty = 74 - 3 * 12 - 8, tx0 = 18.5, tx1 = 78.5;
+  d += `M${tx0} ${ty} C ${tx0 + 4} ${ty + 10}, ${tx1 - 4} ${ty + 10}, ${tx1} ${ty} C ${tx1 - 4} ${ty - 10}, ${tx0 + 4} ${ty - 10}, ${tx0} ${ty} `;
+  d += `M86 78 C 90 70, 100 70, 104 78 C 100 86, 90 86, 86 78 `; // one chip rolled away
+  const svg = svgMark(d, "var(--chalk-dim)", 2.2, "0 0 110 100", "doodle chips");
+  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  const t = document.createElementNS(NS, "text"); t.setAttribute("x", "8"); t.setAttribute("y", "98"); t.setAttribute("font-size", "13"); t.setAttribute("fill", "var(--chalk-yellow)"); t.textContent = "5枚 → ?枚";
+  svg.appendChild(t);
+  document.querySelector(".title-row").appendChild(svg);
+})();
 
 /* ---------- 歴代の億万長者: each day's 1st place, pinned as a paper ---------- */
 function renderFame() {

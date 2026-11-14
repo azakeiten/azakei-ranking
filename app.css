@@ -36,7 +36,7 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: grid; gap: 12px;
 }
-.topbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; font-size: 13px; }
+.topbar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; font-size: 13px; }
 .org { letter-spacing: .18em; font-weight: 600; color: var(--wall-ink); text-decoration: none; }
 .org:hover { text-decoration: underline; }
 .wall-right { display: flex; justify-content: flex-end; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -91,7 +91,7 @@ h1 .under { position: absolute; left: -2%; bottom: -14px; width: 104%; height: 2
 .rank svg { position: absolute; inset: -6% -4%; width: 108%; height: 112%; overflow: visible; pointer-events: none; }
 .name { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; }
 .name .nm { flex: none; max-width: 100%; overflow-wrap: anywhere; }
-.leader { flex: 1; min-width: 20px; border-bottom: 3px dotted var(--chalk-dim); transform: translateY(-.25em); opacity: .65; }
+.leader { order: 3; flex: 1; min-width: 20px; border-bottom: 3px dotted var(--chalk-dim); transform: translateY(-.25em); opacity: .65; }
 .count { white-space: nowrap; font-weight: 600; text-align: right; position: relative; }
 .count small { font-size: .55em; margin-left: 3px; color: var(--chalk-dim); font-weight: 400; }
 .scrib { font-family: var(--f-scribble); font-size: .48em; white-space: nowrap; display: inline-block; transform: rotate(-4deg); }
@@ -298,6 +298,40 @@ body.happyo .row:not(.revealed) svg, body.happyo .row:not(.revealed) .shinkiroku
 .show-ctl button[data-a="next"] { background: var(--chalk-yellow); }
 body.happyo .board { padding-bottom: 64px; }
 @media (prefers-reduced-motion: reduce) { .cover.shake { animation: none; } }
+
+/* ---------- 学級目標: calligraphy in a thin wooden frame above the board ---------- */
+.wall-left { display: flex; align-items: center; gap: 18px; min-width: 0; }
+.motto { margin: 0; position: relative; display: flex; align-items: center; gap: 12px; padding: 7px 14px 7px 12px; background: #f7f2e3; border: 5px solid #7a5b3a;
+  box-shadow: 0 3px 6px rgba(40,30,20,.25), inset 0 0 18px rgba(150,120,70,.18); transform: rotate(-.6deg); }
+.motto-label { writing-mode: vertical-rl; font-size: 10px; letter-spacing: .3em; color: #8a7a62; border-right: 1px solid #cdbf9f; padding-right: 6px; }
+.motto-text { font-family: "Yuji Syuku", "Klee One", serif; font-size: 17px; line-height: 1.35; color: #1d1a16; letter-spacing: .04em; white-space: nowrap; }
+.motto-seal { font-family: "Yuji Syuku", serif; font-size: 10px; color: #b5251b; border: 1.5px solid #b5251b; padding: 2px 3px; writing-mode: vertical-rl; line-height: 1; transform: rotate(3deg); }
+@media (max-width: 1100px) { .motto { display: none; } }
+
+/* ---------- 落書き in the corners ---------- */
+.doodle { position: absolute; pointer-events: none; overflow: visible; }
+.doodle.chips { position: static; margin-left: auto; align-self: center; width: clamp(70px, 7vw, 100px); height: auto; transform: rotate(6deg); flex: none; }
+.doodle.hint { left: clamp(10px, 2vw, 30px); bottom: 54px; width: 190px; height: auto; transform: rotate(-4deg); }
+.doodle text { font-family: var(--f-scribble); }
+@media (max-width: 900px) { .doodle { display: none; } }
+body.happyo .doodle { display: none; }
+
+/* ---------- chalk dust collecting in the tray ---------- */
+.tray .dust { position: absolute; left: 0; right: 0; bottom: 4px; height: 10px; pointer-events: none; }
+.tray .dust i { position: absolute; bottom: 0; height: 3px; border-radius: 50%; background: rgba(250,248,240,.75); }
+
+/* ---------- 名前でさがす ---------- */
+.finder { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: 8px; }
+.finder label { font-family: var(--f-scribble); font-size: 15px; color: var(--chalk-dim); }
+.finder input { font: 400 18px var(--f-hand); color: var(--chalk); background: transparent; border: 0; border-bottom: 2px dashed var(--chalk-dim); padding: 2px 4px; width: min(220px, 60vw); color-scheme: dark; }
+.finder input::placeholder { color: rgba(240,239,231,.35); }
+.finder input:focus-visible { outline: none; border-bottom-color: var(--chalk-yellow); }
+.find-result { font-family: var(--f-scribble); font-size: 15px; color: var(--chalk-yellow); }
+body.happyo .finder { display: none !important; }
+.row.found .nm { background: linear-gradient(transparent 62%, rgba(242,220,109,.38) 62% 88%, transparent 88%); }
+.row.found .name::after, .rest li.found::after { content: "← ここ！"; font-family: var(--f-scribble); color: var(--chalk-yellow); font-size: .5em; transform: rotate(-6deg); display: inline-block; order: 2; }
+.rest li.found { color: var(--chalk-yellow); }
+.rest li.found::after { font-size: .85em; }
 
 /* projector: full screen fills the room */
 :fullscreen body, body.fs { background: var(--wall); }

@@ -13,7 +13,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%2326443a'/%3E%3Ctext x='32' y='46' font-size='38' text-anchor='middle' fill='%23f2dc6d' font-family='sans-serif' font-weight='700'%3E億%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Yomogi&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Yomogi&family=Yuji+Syuku&display=swap">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -25,7 +25,14 @@
 </svg>
 <div class="wall">
   <div class="topbar">
-    <a class="org" href="https://azakeiten.github.io/">AZAKEI ・ 麻布経済展</a>
+    <div class="wall-left">
+      <a class="org" href="https://azakeiten.github.io/">AZAKEI ・ 麻布経済展</a>
+      <figure class="motto" aria-label="麻経のめあて：世の中の仕組みを理解し、自らで仕組みを創り出す。">
+        <span class="motto-label">めあて</span>
+        <span class="motto-text">世の中の仕組みを理解し、<br>自らで仕組みを創り出す。</span>
+        <span class="motto-seal">麻経</span>
+      </figure>
+    </div>
     <div class="clock" id="clock" aria-label="現在時刻"><i class="h" id="hh"></i><i class="m" id="mm"></i><i class="s" id="sec"></i><b></b></div>
     <div class="wall-right">
       <span id="adminBar" hidden class="admin-tag">管理者ページ</span>
@@ -44,6 +51,11 @@
             <div class="tally chalk" id="tally"></div>
           </div>
           <div class="days chalk" id="days" hidden></div>
+          <div class="finder" id="finder" hidden>
+            <label for="findName" class="chalk">名前でさがす</label>
+            <input id="findName" type="search" autocomplete="off" spellcheck="false" placeholder="自分の名前">
+            <span class="find-result chalk" id="findResult" role="status"></span>
+          </div>
 
           <div class="cols">
             <div class="ranking">
@@ -99,7 +111,7 @@
         </div>
         <div class="edge chalk" id="edge"></div>
       </div>
-      <div class="tray" aria-hidden="true"><i class="c1"></i><i class="c2"></i><i class="c3"></i><i class="eraser"></i></div>
+      <div class="tray" aria-hidden="true"><span class="dust" id="dust"></span><i class="c1"></i><i class="c2"></i><i class="c3"></i><i class="eraser"></i></div>
     </div>
 
     <form class="slip" id="form" autocomplete="off" hidden>
