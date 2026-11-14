@@ -9,119 +9,67 @@
 <meta property="og:description" content="チップ5枚からスタート。いちばん増やしたのはだれ？ 麻布経済展のリアルタイムランキング。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://azakeiten.github.io/azakei-ranking/">
-<meta name="theme-color" content="#26443a">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%2326443a'/%3E%3Ctext x='32' y='46' font-size='38' text-anchor='middle' fill='%23f2dc6d' font-family='sans-serif' font-weight='700'%3E億%3C/text%3E%3C/svg%3E">
+<meta name="theme-color" content="#07090b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%2307090b'/%3E%3Cpath d='M10 44 L24 30 L34 38 L54 16' stroke='%23ff4a3d' stroke-width='6' fill='none'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Yomogi&family=Yuji+Syuku&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=BIZ+UDPGothic:wght@400;700&display=swap">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<svg class="defs" width="0" height="0" aria-hidden="true" focusable="false">
-  <filter id="chalky" x="-5%" y="-5%" width="110%" height="110%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="7" result="noise"/>
-    <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.4" xChannelSelector="R" yChannelSelector="G"/>
-  </filter>
-</svg>
-<div class="wall">
-  <div class="topbar">
-    <div class="wall-left">
-      <a class="org" href="https://azakeiten.github.io/">AZAKEI ・ 麻布経済展</a>
-      <figure class="motto" aria-label="麻経のめあて：世の中の仕組みを理解し、自らで仕組みを創り出す。">
-        <span class="motto-label">めあて</span>
-        <span class="motto-text">世の中の仕組みを理解し、<br>自らで仕組みを創り出す。</span>
-        <span class="motto-seal">麻経</span>
-      </figure>
-    </div>
-    <div class="clock" id="clock" aria-label="現在時刻"><i class="h" id="hh"></i><i class="m" id="mm"></i><i class="s" id="sec"></i><b></b></div>
-    <div class="wall-right">
-      <span id="adminBar" hidden class="admin-tag">管理者ページ</span>
-      <button class="btn strong" id="showBtn" type="button">結果発表</button>
-      <button class="btn" id="soundBtn" type="button" aria-pressed="false" hidden>音：なし</button>
-      <button class="btn" id="fsBtn" type="button">全画面で映す</button>
-    </div>
+<header class="exch">
+  <a class="brand" href="https://azakeiten.github.io/">
+    <span class="mark" aria-hidden="true">AZK</span>
+    <span class="brand-text"><b>AZAKEI 証券取引所</b><small>麻布経済展 ・ 本日の億万長者</small></span>
+  </a>
+  <div class="session">
+    <span class="state" id="mktState">取引中</span>
+    <span class="clock led" id="clock">--:--:--</span>
+    <span class="date" id="dateLbl"></span>
   </div>
+  <div class="tools">
+    <span id="adminBar" class="admin-tag" hidden>管理者</span>
+    <button class="tool strong" id="showBtn" type="button">大引け（結果発表）</button>
+    <button class="tool" id="soundBtn" type="button" aria-pressed="false" hidden>音：なし</button>
+    <button class="tool" id="fsBtn" type="button">全画面</button>
+  </div>
+</header>
 
-  <div class="stage">
-    <div class="board-frame">
-      <div class="board" id="board">
-        <div class="writing">
-          <div class="title-row">
-            <h1 class="chalk" id="h1">本日の億万長者</h1>
-            <div class="tally chalk" id="tally"></div>
-          </div>
-          <div class="days chalk" id="days" hidden></div>
-          <div class="finder" id="finder" hidden>
-            <label for="findName" class="chalk">名前でさがす</label>
-            <input id="findName" type="search" autocomplete="off" spellcheck="false" placeholder="自分の名前">
-            <span class="find-result chalk" id="findResult" role="status"></span>
-          </div>
+<section class="indices" id="indices" aria-label="本日の指標"></section>
 
-          <div class="cols">
-            <div class="ranking">
-              <ol class="list" id="list"></ol>
-              <div id="restWrap" hidden>
-                <div class="rest-head chalk" id="restHead"></div>
-                <ol class="rest chalk" id="rest"></ol>
-              </div>
-              <div class="empty chalk" id="empty">まだ だれも書かれていません。<br>チップを増やして、この黒板に名前を残そう。</div>
-            </div>
+<div class="banner" id="banner" role="status" hidden></div>
 
-            <aside class="aside">
-              <div class="paper news" id="paper" hidden>
-                <span class="magnet l"></span><span class="magnet r"></span>
-                <h3>速報<span id="paperNth"></span></h3>
-                <div class="big" id="paperBig"></div>
-                <ul id="paperList"></ul>
-              </div>
-              <div class="paper fame" id="fame" hidden>
-                <span class="magnet c"></span>
-                <h3>歴代の億万長者</h3>
-                <ol id="fameList"></ol>
-              </div>
-              <div class="aim chalk" id="aim" hidden>
-                <div class="aim-title">ランクインするには？</div>
-                <dl id="aimList"></dl>
-              </div>
-              <figure class="chart chalk" id="chart" hidden>
-                <figcaption>本日の最高記録の推移</figcaption>
-                <svg id="chartSvg" viewBox="0 0 320 170" role="img" aria-label="最高記録の推移"></svg>
-              </figure>
-              <div class="paper qr" id="qrPaper" hidden>
-                <span class="magnet c"></span>
-                <div class="qr-code" id="qr"></div>
-                <div class="qr-text"><b>スマホでも見られる</b><span>azakeiten.github.io<br>/azakei-ranking/</span></div>
-              </div>
-            </aside>
-          </div>
-
-          <div class="lower" id="lower" hidden>
-            <section class="hours chalk" id="hours">
-              <h4>時間ごとの挑戦者</h4>
-              <dl id="hoursList"></dl>
-            </section>
-            <section class="memo chalk" id="memo" hidden>
-              <h4>経済メモ</h4>
-              <ul id="memoList"></ul>
-            </section>
-          </div>
-
-          <div class="rule chalk">スタートは <span class="y">5枚</span>。<span class="p">40枚をこえたら シャーペン</span> をプレゼント！</div>
-          <div class="status chalk" id="status" role="status"></div>
-        </div>
-        <div class="edge chalk" id="edge"></div>
+<main class="floor">
+  <section class="board" aria-labelledby="boardTitle">
+    <div class="board-head">
+      <h1 id="boardTitle">本日の億万長者</h1>
+      <div class="days" id="days" hidden></div>
+      <div class="finder" id="finder" hidden>
+        <label for="findName">銘柄検索</label>
+        <input id="findName" type="search" autocomplete="off" spellcheck="false" placeholder="名前を入力">
+        <span class="find-result" id="findResult" role="status"></span>
       </div>
-      <div class="tray" aria-hidden="true"><span class="dust" id="dust"></span><i class="c1"></i><i class="c2"></i><i class="c3"></i><i class="eraser"></i></div>
     </div>
+    <div class="qhead" aria-hidden="true">
+      <span>順位</span><span class="c-code">コード</span><span>銘柄</span><span class="r">現在値</span><span class="r c-pct">騰落率</span><span class="r c-move">前回比</span>
+    </div>
+    <div class="rows" id="rows"></div>
+    <p class="empty" id="empty">まだ上場銘柄はありません。<br>最初の記録が入ると、ここに表示されます。</p>
+    <div class="rest-wrap" id="restWrap" hidden>
+      <h2 id="restHead">11位以下</h2>
+      <ol class="rest" id="rest"></ol>
+    </div>
+    <p class="status" id="status" role="status"></p>
+  </section>
 
-    <form class="slip" id="form" autocomplete="off" hidden>
-      <span class="magnet l"></span><span class="magnet r"></span>
-      <h2>チップ記録 入力用紙</h2>
-      <div id="passBox" class="pass-box">
+  <aside class="side">
+    <form class="panel slip" id="form" autocomplete="off" hidden>
+      <h3>新規上場（記録を追加）</h3>
+      <div id="passBox" class="stack">
         <label for="pass">合言葉<input id="pass" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="管理者の合言葉"></label>
         <button class="submit" id="passBtn" type="button">入力をはじめる</button>
       </div>
-      <div id="entryBox" hidden>
+      <div id="entryBox" class="stack" hidden>
         <label for="name">プレイヤー名<input id="name" maxlength="20" placeholder="例：たろう"></label>
         <label for="chips">チップの枚数
           <span class="chips-row">
@@ -131,14 +79,47 @@
           </span>
         </label>
         <label for="date">日付<input id="date" type="date"></label>
-        <button class="submit" id="submit" type="submit">黒板に書く</button>
+        <button class="submit" id="submit" type="submit">上場させる</button>
       </div>
       <p class="msg" id="msg" role="status"></p>
-      <p class="hint" id="hint">押すと、お客さん側の黒板も数秒で書きかわります。書きまちがいは黒板の「消す」で直せます。</p>
+      <p class="hint">押すと、お客さん側のボードも数秒で更新されます。まちがえた記録は一覧の「取消」で消せます。</p>
       <button class="linkish" id="forget" type="button" hidden>この端末の合言葉を忘れる</button>
     </form>
-  </div>
-</div>
+
+    <div class="panel target" id="target" hidden></div>
+
+    <div class="panel" id="breadthPanel" hidden>
+      <h3>マーケット概況</h3>
+      <div class="breadth" id="breadth"></div>
+      <dl class="memo" id="memo"></dl>
+    </div>
+
+    <figure class="panel chart" id="chart" hidden>
+      <figcaption>本日の高値推移</figcaption>
+      <svg id="chartSvg" viewBox="0 0 320 160" role="img" aria-label="高値の推移"></svg>
+    </figure>
+
+    <div class="panel" id="volPanel" hidden>
+      <h3>時間帯別 出来高</h3>
+      <div class="vol" id="vol"></div>
+    </div>
+
+    <div class="panel" id="fame" hidden>
+      <h3>歴代の億万長者</h3>
+      <ol class="fame" id="fameList"></ol>
+    </div>
+
+    <div class="panel qr" id="qrPanel" hidden>
+      <div class="qr-code" id="qr"></div>
+      <div><b>スマホでも見られます</b><span>azakeiten.github.io/azakei-ranking/</span></div>
+    </div>
+  </aside>
+</main>
+
+<footer class="tape" aria-label="最新の記録">
+  <span class="tape-label">速報</span>
+  <div class="tape-track"><div class="tape-move" id="tape"></div></div>
+</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="config.js"></script>
