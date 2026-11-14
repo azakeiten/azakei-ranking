@@ -33,6 +33,7 @@ let filter = null, userPicked = false;
 let isAdmin = location.hash === "#admin";
 let pass = ls.get("azakei-pass") || "";
 let busy = false, pendingDel = null, lastSig = "", failCount = 0, drewOnce = false, writeSeq = 0;
+let show = null;                     // 結果発表 in progress
 let crown = null, lastCrown = null;   // 1st place just changed hands (crown: play it once; lastCrown: keep it on the 速報 paper)
 
 /* ---------- chalk textures ---------- */
@@ -186,7 +187,7 @@ function apply(list) {
   }
   const crowned = !!crown;
   render();
-  if (extra) setTimeout(() => gogai(extra), crowned ? 5200 : 2200);
+  if (extra && !show) setTimeout(() => { if (!show) gogai(extra); }, crowned ? 5200 : 2200);
 }
 
 async function load() {
@@ -242,6 +243,7 @@ function render(force) {
   $("form").hidden = !isAdmin; $("adminBar").hidden = !isAdmin;
   $("passBox").hidden = !!pass; $("entryBox").hidden = !pass; $("forget").hidden = !pass;
 
+  if (show) return; // the board is frozen while results are being announced
   const sig = JSON.stringify([entries, filter, isAdmin, !!pass, busy, pendingDel, Math.floor(Date.now() / 60000)]);
   if (!force && sig === lastSig) return;
   lastSig = sig;
@@ -299,6 +301,7 @@ function render(force) {
     }
     const li = document.createElement("li");
     li.className = "row chalk" + (rank <= 3 ? " r" + rank : "") + (isNew ? " writein" : "");
+    li.dataset.rank = rank;
     li.style.transform = "rotate(" + ((rnd() - .5) * 1.3).toFixed(2) + "deg) translateX(" + Math.round(rnd() * 10) + "px)";
     // the new 1st place waits while the eraser clears the old one
     const crowning = isNew && i === 0 && crown && crown.id === e.id && !reduced();
@@ -542,7 +545,10 @@ function gogai(g) {
   p.innerHTML = '<span class="magnet c"></span><div class="gg-head"><b>号外</b><span class="gg-date"></span></div><div class="gg-cols"><div class="gg-title"></div><div class="gg-body"></div></div><div class="gg-foot">AZAKEI 麻布経済展</div>';
   p.querySelector(".gg-date").textContent = fmtLong(today()) + "　" + hhmm(Date.now()) + " 発行";
   const title = p.querySelector(".gg-title"), body = p.querySelector(".gg-body");
-  if (g.kind === "record") {
+  if (g.kind === "winner") {
+    vText(title, "本日の億万長者、決定");
+    vText(body, g.e.name + "さん " + g.e.chips + "枚。スタートの" + times(g.e.chips) + "倍" + (LAST_YEAR && g.e.chips > LAST_YEAR ? "。去年の記録もこえた" : ""));
+  } else if (g.kind === "record") {
     vText(title, "去年の記録、破れる");
     vText(body, g.e.name + "さん " + g.e.chips + "枚。去年の1位（" + LAST_YEAR + "枚）を" + (g.e.chips - LAST_YEAR) + "枚上回る");
   } else {
@@ -550,7 +556,7 @@ function gogai(g) {
     vText(body, "配ったチップ" + g.given + "枚が、いま合計" + g.total + "枚に");
   }
   board.appendChild(p);
-  const stay = g.kind === "record" ? 45000 : 16000;
+  const stay = g.kind === "winner" ? 90000 : g.kind === "record" ? 45000 : 16000;
   if (!reduced()) {
     p.animate([
       { transform: "translateY(-130%) rotate(-14deg)", opacity: 0 },
@@ -572,7 +578,7 @@ function gogai(g) {
 
 /* ---------- sound: chalk taps, an eraser stroke, a magnet hitting the board (off until switched on) ---------- */
 const Sound = (() => {
-  const quiet = { chalk() {}, eraser() {}, pin() {}, paper() {} };
+  const quiet = { chalk() {}, eraser() {}, pin() {}, paper() {}, roll() {} };
   const AC = window.AudioContext || window.webkitAudioContext;
   const btn = $("soundBtn");
   if (!AC) return quiet;
@@ -614,6 +620,15 @@ const Sound = (() => {
       const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.16, t + 0.12); g.gain.setValueAtTime(0.14, t + T - 0.2); g.gain.linearRampToValueAtTime(0, t + T);
       s.connect(f); f.connect(g); g.connect(ctx.destination); s.start(t); s.stop(t + T + 0.05);
     },
+    roll(ms) {
+      if (!ready()) return;
+      const t0 = ctx.currentTime, T = ms / 1000; let t = t0;
+      while (t - t0 < T) { const p = (t - t0) / T; burst(t, 0.05, 1700 + Math.random() * 400, 0.7, 0.04 + 0.14 * p); t += 0.048 - 0.02 * p; }
+      burst(t0 + T, 1.1, 5200, 0.3, 0.2, "highpass");
+      const o = ctx.createOscillator(); o.type = "sine"; o.frequency.setValueAtTime(110, t0 + T); o.frequency.exponentialRampToValueAtTime(45, t0 + T + 0.3);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.4, t0 + T); g.gain.exponentialRampToValueAtTime(0.001, t0 + T + 0.45);
+      o.connect(g); g.connect(ctx.destination); o.start(t0 + T); o.stop(t0 + T + 0.5);
+    },
     paper(delayMs) { if (!ready()) return; const t = ctx.currentTime + delayMs / 1000; for (let i = 0; i < 5; i++) burst(t + i * 0.09 + Math.random() * 0.04, 0.12, 3200 + Math.random() * 2500, 0.6, 0.05, "highpass"); },
     pin(delayMs) {
       if (!ready()) return;
@@ -625,6 +640,103 @@ const Sound = (() => {
     }
   };
 })();
+
+/* ---------- 結果発表: the top rows are covered with paper strips and peeled off, 10th to 1st ---------- */
+function startShow() {
+  if (show) return;
+  if (!ranked(filter).length) return;
+  fresh = new Set(); render(true);
+  document.body.classList.add("happyo");
+  const board = $("board");
+  const rows = [...document.querySelectorAll("#list .row")];
+  const covers = rows.map((li, i) => {
+    const c = document.createElement("div"); c.className = "cover" + (i === 0 ? " first" : ""); c.setAttribute("aria-hidden", "true");
+    c.innerHTML = '<span class="tape l"></span><span class="tape r"></span><b></b>';
+    c.querySelector("b").textContent = i === 0 ? "第1位　？？？" : "第" + li.dataset.rank + "位";
+    board.appendChild(c);
+    return c;
+  });
+  const tag = document.createElement("span"); tag.className = "show-tag chalk"; tag.textContent = "結果発表";
+  $("h1").after(tag);
+  const ctl = document.createElement("div"); ctl.className = "show-ctl";
+  ctl.innerHTML = '<span class="hint">クリック・スペースキーで1枚ずつ</span><button type="button" data-a="next">めくる</button><button type="button" data-a="auto">自動で発表</button><button type="button" data-a="end">おわる</button>';
+  board.appendChild(ctl);
+  ctl.addEventListener("click", (ev) => { const a = ev.target.dataset && ev.target.dataset.a; if (ev.target.blur) ev.target.blur(); if (a === "next") revealNext(); else if (a === "auto") toggleAuto(); else if (a === "end") endShow(); });
+  show = { rows, covers, tag, ctl, next: rows.length - 1, auto: false, busy: false, timer: null };
+  placeCovers();
+  window.addEventListener("resize", placeCovers);
+  $("showBtn").textContent = "発表をおわる";
+}
+function placeCovers() {
+  if (!show) return;
+  const b = $("board").getBoundingClientRect();
+  show.rows.forEach((li, i) => {
+    const c = show.covers[i]; if (!c.isConnected) return;
+    const r = li.getBoundingClientRect(), n = li.querySelector(".name").getBoundingClientRect();
+    c.style.left = (n.left - b.left - 10) + "px"; c.style.width = (r.right - n.left + 24) + "px";
+    c.style.top = (r.top - b.top + r.height * 0.05) + "px"; c.style.height = (r.height * 0.9) + "px";
+  });
+}
+function revealNext() {
+  if (!show || show.busy) return;
+  const i = show.next;
+  if (i < 0) { endShow(); return; }
+  show.next--;
+  const li = show.rows[i], c = show.covers[i], slow = i <= 2;
+  const peel = () => {
+    Sound.paper(0);
+    if (reduced()) c.remove();
+    else c.animate([
+      { transform: "none" },
+      { transform: "translateY(-8px) rotate(-3deg)", offset: .22 },
+      { transform: "translateY(130%) rotate(16deg)", opacity: 0 }
+    ], { duration: slow ? 950 : 620, easing: "cubic-bezier(.55,0,.75,.45)", fill: "forwards" }).onfinish = () => c.remove();
+    li.classList.add("revealed");
+    li.querySelectorAll("svg").forEach((s) => drawIn(s, s.classList.contains("hanamaru") ? 1600 : 700, 350));
+    show.busy = false;
+    if (i === 0) {
+      const e = ranked(filter)[0];
+      setTimeout(() => { if (show && e) gogai({ kind: "winner", e }); }, 2200);
+      show.ctl.querySelector('[data-a="next"]').textContent = "もとの黒板にもどす";
+    }
+  };
+  if (i === 0 && !reduced()) {
+    show.busy = true; c.classList.add("shake"); Sound.roll(2300);
+    setTimeout(() => { c.classList.remove("shake"); peel(); }, 2350);
+  } else peel();
+}
+function toggleAuto() {
+  if (!show) return;
+  show.auto = !show.auto;
+  show.ctl.querySelector('[data-a="auto"]').textContent = show.auto ? "自動をとめる" : "自動で発表";
+  const step = () => {
+    if (!show || !show.auto) return;
+    if (show.next < 0) { show.auto = false; return; }
+    const before = show.next;
+    revealNext();
+    // a longer breath before 3rd, 2nd and the drumroll for 1st
+    const wait = before === 0 ? 0 : before - 1 === 0 ? 4200 : before - 1 <= 2 ? 3600 : 1700;
+    if (show && show.next >= 0) show.timer = setTimeout(step, wait);
+  };
+  if (show.auto) step(); else clearTimeout(show.timer);
+}
+function endShow() {
+  if (!show) return;
+  clearTimeout(show.timer);
+  show.covers.forEach((c) => c.remove()); show.tag.remove(); show.ctl.remove();
+  window.removeEventListener("resize", placeCovers);
+  show = null;
+  document.body.classList.remove("happyo");
+  $("showBtn").textContent = "結果発表";
+  render(true);
+}
+$("showBtn").onclick = (ev) => { ev.currentTarget.blur(); if (show) endShow(); else startShow(); };
+document.addEventListener("keydown", (ev) => {
+  if (!show || /^(INPUT|TEXTAREA|SELECT)$/.test((ev.target && ev.target.tagName) || "")) return;
+  if (ev.key === " " || ev.key === "Enter" || ev.key === "ArrowRight") { ev.preventDefault(); revealNext(); }
+  else if (ev.key === "Escape") endShow();
+  else if (ev.key === "a" || ev.key === "A") toggleAuto();
+});
 
 /* ---------- handwriting: no two characters sit quite the same ---------- */
 function handText(el, s, rnd) {
