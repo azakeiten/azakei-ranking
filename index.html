@@ -9,29 +9,29 @@
 <meta property="og:description" content="チップ5枚からスタート。いちばん増やしたのはだれ？ 麻布経済展のリアルタイムランキング。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://azakeiten.github.io/azakei-ranking/">
-<meta name="theme-color" content="#07090b">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%2307090b'/%3E%3Cpath d='M10 44 L24 30 L34 38 L54 16' stroke='%23ff4a3d' stroke-width='6' fill='none'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23000'/%3E%3Ctext x='32' y='42' font-size='26' text-anchor='middle' fill='%23fb8b1e' font-family='monospace' font-weight='700'%3EAZK%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=BIZ+UDPGothic:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=BIZ+UDGothic:wght@400;700&display=swap">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<header class="exch">
-  <a class="brand" href="https://azakeiten.github.io/">
-    <span class="mark" aria-hidden="true">AZK</span>
-    <span class="brand-text"><b>AZAKEI 証券取引所</b><small>麻布経済展 ・ 本日の億万長者</small></span>
-  </a>
+<header class="cmd">
+  <div class="cmdline" aria-label="コマンド欄">
+    <span class="tk">AZK</span><span class="sector">&lt;Equity&gt;</span><span class="fn" id="fnName">RANK</span><span class="cursor" aria-hidden="true"></span><span class="go">GO</span>
+  </div>
+  <a class="title" href="https://azakeiten.github.io/"><b>AZAKEI 証券取引所</b><span>麻布経済展 ・ 本日の億万長者</span></a>
   <div class="session">
     <span class="state" id="mktState">取引中</span>
-    <span class="clock led" id="clock">--:--:--</span>
+    <span class="clock" id="clock">--:--:--</span>
     <span class="date" id="dateLbl"></span>
   </div>
   <div class="tools">
     <span id="adminBar" class="admin-tag" hidden>管理者</span>
-    <button class="tool strong" id="showBtn" type="button">大引け（結果発表）</button>
-    <button class="tool" id="soundBtn" type="button" aria-pressed="false" hidden>音：なし</button>
-    <button class="tool" id="fsBtn" type="button">全画面</button>
+    <button class="key red" id="showBtn" type="button">大引け</button>
+    <button class="key" id="soundBtn" type="button" aria-pressed="false" hidden>音：なし</button>
+    <button class="key" id="fsBtn" type="button">全画面</button>
   </div>
 </header>
 
@@ -40,13 +40,14 @@
 <div class="banner" id="banner" role="status" hidden></div>
 
 <main class="floor">
-  <section class="board" aria-labelledby="boardTitle">
-    <div class="board-head">
+  <section class="board panel-frame" aria-labelledby="boardTitle">
+    <div class="ph">
+      <span class="code">RANK</span>
       <h1 id="boardTitle">本日の億万長者</h1>
       <div class="days" id="days" hidden></div>
       <div class="finder" id="finder" hidden>
         <label for="findName">銘柄検索</label>
-        <input id="findName" type="search" autocomplete="off" spellcheck="false" placeholder="名前を入力">
+        <input id="findName" type="search" autocomplete="off" spellcheck="false" placeholder="名前">
         <span class="find-result" id="findResult" role="status"></span>
       </div>
     </div>
@@ -54,7 +55,7 @@
       <span>順位</span><span class="c-code">コード</span><span>銘柄</span><span class="r">現在値</span><span class="r c-pct">騰落率</span><span class="r c-move">前回比</span>
     </div>
     <div class="rows" id="rows"></div>
-    <p class="empty" id="empty">まだ上場銘柄はありません。<br>最初の記録が入ると、ここに表示されます。</p>
+    <p class="empty" id="empty">上場銘柄はまだありません。最初の記録が入ると表示されます。</p>
     <div class="rest-wrap" id="restWrap" hidden>
       <h2 id="restHead">11位以下</h2>
       <ol class="rest" id="rest"></ol>
@@ -64,7 +65,7 @@
 
   <aside class="side">
     <form class="panel slip" id="form" autocomplete="off" hidden>
-      <h3>新規上場（記録を追加）</h3>
+      <h3><span class="code">ORD</span>新規上場（記録を追加）</h3>
       <div id="passBox" class="stack">
         <label for="pass">合言葉<input id="pass" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="管理者の合言葉"></label>
         <button class="submit" id="passBtn" type="button">入力をはじめる</button>
@@ -82,30 +83,35 @@
         <button class="submit" id="submit" type="submit">上場させる</button>
       </div>
       <p class="msg" id="msg" role="status"></p>
-      <p class="hint">押すと、お客さん側のボードも数秒で更新されます。まちがえた記録は一覧の「取消」で消せます。</p>
+      <p class="hint">押すと、お客さん側の画面も数秒で更新されます。まちがえた記録は一覧の「取消」で消せます。</p>
       <button class="linkish" id="forget" type="button" hidden>この端末の合言葉を忘れる</button>
     </form>
+
+    <div class="panel" id="newsPanel" hidden>
+      <h3><span class="code">TOP</span>ニュース</h3>
+      <ol class="news" id="news"></ol>
+    </div>
 
     <div class="panel target" id="target" hidden></div>
 
     <div class="panel" id="breadthPanel" hidden>
-      <h3>マーケット概況</h3>
+      <h3><span class="code">MKT</span>マーケット概況</h3>
       <div class="breadth" id="breadth"></div>
       <dl class="memo" id="memo"></dl>
     </div>
 
     <figure class="panel chart" id="chart" hidden>
-      <figcaption>本日の高値推移</figcaption>
+      <figcaption><span class="code">GIP</span>本日の高値推移</figcaption>
       <svg id="chartSvg" viewBox="0 0 320 160" role="img" aria-label="高値の推移"></svg>
     </figure>
 
     <div class="panel" id="volPanel" hidden>
-      <h3>時間帯別 出来高</h3>
+      <h3><span class="code">MOST</span>時間帯別 出来高</h3>
       <div class="vol" id="vol"></div>
     </div>
 
     <div class="panel" id="fame" hidden>
-      <h3>歴代の億万長者</h3>
+      <h3><span class="code">HDS</span>歴代の億万長者</h3>
       <ol class="fame" id="fameList"></ol>
     </div>
 
@@ -117,7 +123,7 @@
 </main>
 
 <footer class="tape" aria-label="最新の記録">
-  <span class="tape-label">速報</span>
+  <span class="tape-label">AZK</span>
   <div class="tape-track"><div class="tape-move" id="tape"></div></div>
 </footer>
 

@@ -220,20 +220,48 @@ function render(force) {
   renderVolume(list);
   renderFame();
   renderFinder(list);
+  renderNews();
   renderTape();
   fresh = new Set();
+}
+
+/* TOP: headlines written from the day's records, the way a terminal's news wire reads ("*" = flash) */
+function renderNews() {
+  const panel = $("newsPanel");
+  const day = filter === "all" ? liveDay() : filter;
+  const es = entries.filter(e => e.date === day && e.createdAt).sort((a, b) => a.createdAt - b.createdAt);
+  if (!es.length) { panel.hidden = true; return; }
+  panel.hidden = false;
+  let ath = Math.max(LAST_YEAR, ...entries.filter(e => e.date < day).map(e => e.chips), 0);
+  const items = []; let top = null;
+  es.forEach((e, i) => {
+    const so = es.slice(0, i + 1), r = so.filter(x => x.chips > e.chips).length + 1;
+    if (!top) items.push({ t: e.createdAt, h: "*" + e.name + "、本日最初の上場　" + e.chips + "枚", cls: "big" });
+    else if (e.chips > top.chips) items.push({ t: e.createdAt, h: "*首位交代：" + top.name + " → " + e.name + "　" + e.chips + "枚", cls: "big" });
+    else items.push({ t: e.createdAt, h: e.name + "、" + e.chips + "枚で上場（" + r + "位）", cls: "" });
+    if (!top || e.chips > top.chips) top = e;
+    if (e.chips > ath) { items.push({ t: e.createdAt, h: "*上場来高値を更新：" + e.name + " " + e.chips + "枚（これまで " + ath + "枚）", cls: "hot" }); ath = e.chips; }
+    if ((i + 1) % MILESTONE === 0) items.push({ t: e.createdAt, h: "*出来高、" + (i + 1) + "人を突破", cls: "big" });
+  });
+  const ol = $("news"); ol.textContent = "";
+  items.slice(-16).reverse().forEach(it => {
+    const li = document.createElement("li"); if (it.cls) li.className = it.cls;
+    const t = document.createElement("span"); t.className = "t"; t.textContent = hhmm(it.t);
+    const h = document.createElement("span"); h.className = "h"; h.textContent = it.h;
+    li.append(t, h); ol.appendChild(li);
+  });
 }
 
 function renderDays(dates) {
   const days = $("days"); days.textContent = ""; days.hidden = dates.length < 2;
   if (dates.length < 2) return;
-  for (const v of [...dates, "all"]) {
-    const b = document.createElement("button"); b.type = "button"; b.className = "day";
+  [...dates, "all"].forEach((v, n) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "day"; b.dataset.n = n + 1;
     b.textContent = v === "all" ? "全日程" : (v === today() ? "本日 " : "") + fmtShort(v);
     b.setAttribute("aria-pressed", String(v === filter));
     b.onclick = () => { filter = v; userPicked = v !== liveDay(); moves = new Map(); render(true); };
     days.appendChild(b);
-  }
+  });
 }
 
 function idx(k, v, unit, s) {
@@ -313,7 +341,7 @@ function renderTarget(list) {
   const box = $("target");
   if (!list.length) { box.hidden = true; return; }
   box.hidden = false; box.textContent = "";
-  const h = document.createElement("h3"); h.textContent = "ランクインの目安（いまの枚数）"; box.appendChild(h);
+  const h = document.createElement("h3"); const hc = document.createElement("span"); hc.className = "code"; hc.textContent = "TGT"; h.append(hc, "ランクインの目安"); box.appendChild(h);
   const rows = [["1位", list[0].chips]];
   if (list.length >= 3) rows.push(["3位", list[2].chips]);
   if (list.length >= TOP_N) rows.push([TOP_N + "位", list[TOP_N - 1].chips]);
@@ -357,19 +385,19 @@ function renderChart(list) {
   const maxV = Math.max(...day.map(e => e.chips), LAST_YEAR);
   const yMax = Math.max(10, Math.ceil(maxV * 1.12 / 10) * 10);
   const X = (t) => L + (t - t0) / (t1 - t0) * (W - L - R), Y = (v) => H - B - v / yMax * (H - T - B);
-  for (let i = 0; i <= 4; i++) { const y = T + (H - T - B) * i / 4; svg.appendChild(svgEl("line", { x1: L, x2: W - R, y1: y, y2: y, stroke: "#1e262c", "stroke-width": 1 })); }
+  for (let i = 0; i <= 4; i++) { const y = T + (H - T - B) * i / 4; svg.appendChild(svgEl("line", { x1: L, x2: W - R, y1: y, y2: y, stroke: "#262626", "stroke-width": 1 })); }
   const label = (x, y, s, anchor, fill) => { const t = svgEl("text", { x, y, "text-anchor": anchor, fill, "font-size": 10 }); t.textContent = s; svg.appendChild(t); };
-  label(L - 5, T + 4, String(yMax), "end", "#7f8c95"); label(L - 5, H - B + 3, "0", "end", "#7f8c95");
-  label(L, H - 6, hhmm(t0), "start", "#7f8c95"); label(W - R, H - 6, isToday ? "現在" : hhmm(t1), "end", "#7f8c95");
-  if (LAST_YEAR) { svg.appendChild(svgEl("line", { x1: L, x2: W - R, y1: Y(LAST_YEAR), y2: Y(LAST_YEAR), stroke: "#ff4a3d", "stroke-width": 1, "stroke-dasharray": "4 4" })); label(L + 4, Y(LAST_YEAR) - 4, "上場来高値 " + LAST_YEAR, "start", "#ff4a3d"); }
+  label(L - 5, T + 4, String(yMax), "end", "#8e8e8e"); label(L - 5, H - B + 3, "0", "end", "#8e8e8e");
+  label(L, H - 6, hhmm(t0), "start", "#8e8e8e"); label(W - R, H - 6, isToday ? "現在" : hhmm(t1), "end", "#8e8e8e");
+  if (LAST_YEAR) { svg.appendChild(svgEl("line", { x1: L, x2: W - R, y1: Y(LAST_YEAR), y2: Y(LAST_YEAR), stroke: "#f5c518", "stroke-width": 1, "stroke-dasharray": "4 4" })); label(L + 4, Y(LAST_YEAR) - 4, "上場来高値 " + LAST_YEAR, "start", "#f5c518"); }
   let best = -1, d = "";
   for (const e of day) if (e.chips > best) { d += (best < 0 ? "M" : " L" + X(e.createdAt).toFixed(1) + " " + Y(best).toFixed(1) + " L") + X(e.createdAt).toFixed(1) + " " + Y(e.chips).toFixed(1); best = e.chips; }
   d += " L" + X(t1).toFixed(1) + " " + Y(best).toFixed(1);
-  const area = svgEl("path", { d: d + " L" + X(t1).toFixed(1) + " " + (H - B) + " L" + X(t0).toFixed(1) + " " + (H - B) + " Z", fill: "rgba(255,182,39,.10)" });
+  const area = svgEl("path", { d: d + " L" + X(t1).toFixed(1) + " " + (H - B) + " L" + X(t0).toFixed(1) + " " + (H - B) + " Z", fill: "rgba(251,139,30,.12)" });
   svg.appendChild(area);
-  svg.appendChild(svgEl("path", { d, fill: "none", stroke: "#ffb627", "stroke-width": 2, "stroke-linejoin": "round" }));
-  svg.appendChild(svgEl("circle", { cx: X(t1), cy: Y(best), r: 3.5, fill: "#ffb627" }));
-  label(Math.min(X(t1), W - R) - 6, Y(best) - 7, best + "枚", "end", "#ffb627");
+  svg.appendChild(svgEl("path", { d, fill: "none", stroke: "#fb8b1e", "stroke-width": 2, "stroke-linejoin": "round" }));
+  svg.appendChild(svgEl("circle", { cx: X(t1), cy: Y(best), r: 3.5, fill: "#fb8b1e" }));
+  label(Math.min(X(t1), W - R) - 6, Y(best) - 7, best + "枚", "end", "#fb8b1e");
 }
 
 function renderVolume(list) {
@@ -449,7 +477,7 @@ function banner(n) {
   const b = $("banner");
   b.textContent = "";
   const t = document.createElement("span"); t.className = "tag"; t.textContent = n.tag;
-  const h = document.createElement("span"); h.className = "head"; h.textContent = n.head;
+  const h = document.createElement("span"); h.className = "head"; h.textContent = "*" + n.head;
   const s = document.createElement("span"); s.className = "sub"; s.textContent = n.sub || "";
   b.append(t, h, s);
   b.className = "banner" + (n.amber ? " amber" : "");
@@ -476,23 +504,18 @@ function delButton(e) {
   return del;
 }
 
-/* ---------- 大引け: results revealed 10th → 1st on a split-flap board ---------- */
-const FLAP_CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワン0123456789";
+/* ---------- 大引け: results typed into the terminal, 10th → 1st ---------- */
 function flapTo(el, text, ms) {
   if (reduced()) { el.textContent = text; return; }
-  const chars = [...text]; el.textContent = "";
-  const spans = chars.map(() => { const s = document.createElement("span"); s.className = "flap"; el.appendChild(s); return s; });
-  const t0 = performance.now();
-  const step = (now) => {
-    let done = true;
-    spans.forEach((s, i) => {
-      const end = ms * (0.45 + 0.55 * (i + 1) / chars.length);
-      if (now - t0 >= end) s.textContent = chars[i];
-      else { done = false; s.textContent = /\d/.test(chars[i]) ? String(Math.floor(Math.random() * 10)) : FLAP_CHARS[Math.floor(Math.random() * FLAP_CHARS.length)]; }
-    });
-    if (!done) requestAnimationFrame(step);
+  const chars = [...text]; el.textContent = ""; el.classList.add("typing");
+  const per = Math.max(40, ms / Math.max(1, chars.length));
+  let i = 0;
+  const step = () => {
+    i++; el.textContent = chars.slice(0, i).join("");
+    if (i < chars.length) setTimeout(step, per * (0.7 + Math.random() * 0.6));
+    else el.classList.remove("typing");
   };
-  requestAnimationFrame(step);
+  setTimeout(step, per);
 }
 function startShow() {
   if (show || !ranked(filter).length) return;
@@ -511,7 +534,7 @@ function startShow() {
   ctl.innerHTML = '<span class="hint2">クリック・スペースキーで1つずつ発表</span><button type="button" data-a="next">発表する</button><button type="button" data-a="auto">自動で発表</button><button type="button" data-a="end">おわる</button>';
   $("rows").after(ctl);
   ctl.addEventListener("click", (ev) => { const a = ev.target.dataset && ev.target.dataset.a; if (ev.target.blur) ev.target.blur(); if (a === "next") revealNext(); else if (a === "auto") toggleAuto(); else if (a === "end") endShow(); });
-  $("boardTitle").textContent = "本日の大引け　結果発表";
+  $("boardTitle").textContent = "本日の大引け　結果発表"; $("fnName").textContent = "CLOSE";
   show = { rows, list: ranked(filter), ctl, next: rows.length - 1, auto: false, busy: false, timer: null };
   $("showBtn").textContent = "発表をおわる";
 }
@@ -561,7 +584,7 @@ function endShow() {
   if (!show) return;
   clearTimeout(show.timer); show.ctl.remove(); show = null;
   document.body.classList.remove("closing"); setSession(false);
-  $("boardTitle").textContent = "本日の億万長者";
+  $("boardTitle").textContent = "本日の億万長者"; $("fnName").textContent = "RANK";
   $("showBtn").textContent = "大引け（結果発表）";
   render(true);
 }
