@@ -70,7 +70,7 @@ function apply(list) {
   if (prevKnown && fresh.size) {
     const rec = recordIds();
     const hit = list.filter(e => fresh.has(e.id) && rec.has(e.id)).sort((a, b) => b.chips - a.chips)[0];
-    if (hit) band = { k: "EXHIBITION RECORD", n: hit.name, v: hit.chips };
+    if (hit) band = { k: "EXHIBITION RECORD", n: hit.name, v: hit.chips, gold: true };
   }
   render();
   if (band && !show) flash(band);
@@ -169,7 +169,15 @@ function renderRows(list) {
     li.dataset.id = e.id;
     const tail = marks(e, rec);
     if (isAdmin && pass) tail.appendChild(delButton(e));
-    li.append(cell("rk", r), cell("nm", e.name), cell("tm c-time", e.createdAt ? hhmm(e.createdAt) : ""), cell("mx c-mult", mult(e.chips)), cell("rs", num(e.chips)), tail);
+    if (r === 1) {
+      // the leader band: label, huge name and result, details underneath
+      const meta = document.createElement("span"); meta.className = "meta";
+      meta.append(cell("", "TIME " + (e.createdAt ? hhmm(e.createdAt) : "—")), cell("", mult(e.chips) + " START"), tail);
+      const rs = cell("rs", num(e.chips)); const u = document.createElement("small"); u.textContent = "枚"; rs.appendChild(u);
+      li.append(cell("rk", r), cell("lab", show ? "WINNER" : "CURRENT LEADER"), cell("nm", e.name), meta, rs);
+    } else {
+      li.append(cell("rk", r), cell("nm", e.name), cell("tm c-time", e.createdAt ? hhmm(e.createdAt) : ""), cell("mx c-mult", mult(e.chips)), cell("rs", num(e.chips)), tail);
+    }
     box.appendChild(li);
   });
   if (!reduced()) box.querySelectorAll(".row").forEach(el => {
@@ -230,6 +238,7 @@ function flash(b) {
   const el = $("flash"); el.textContent = "";
   el.append(cell("k", b.k), cell("n", b.n));
   const v = cell("v", num(b.v)); const s = document.createElement("small"); s.textContent = "枚"; v.appendChild(s); el.appendChild(v);
+  el.classList.toggle("gold", !!b.gold);
   el.hidden = false; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
   clearTimeout(flashTimer); flashTimer = setTimeout(() => { el.hidden = true; }, b.stay || 15000);
 }
@@ -274,6 +283,7 @@ function revealNext() {
   show.next--;
   const row = show.rows[i], e = show.list[i];
   const go = () => {
+    if (i === 0) { const lab = row.querySelector(".lab"); if (lab) lab.textContent = "WINNER"; }
     row.classList.remove("wait"); row.classList.add("enter");
     show.busy = false;
     if (i === 0) { flash({ k: "WINNER", n: e.name, v: e.chips, stay: 600000 }); show.ctl.querySelector('[data-a="next"]').textContent = "BACK TO LIVE"; }
