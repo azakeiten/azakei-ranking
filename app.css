@@ -225,3 +225,49 @@ body.closing .q.top { font-size: clamp(30px, 3.8vw, 56px); }
   .tape-move, .cursor, .typing::after, .banner.blink .head, .q.flash { animation: none; }
 }
 body.fs .q { font-size: clamp(19px, 2vw, 30px); }
+
+/* ---------- working command line ---------- */
+.cmdline input { font: 600 15px var(--f-mono); color: var(--amber); background: transparent; border: 0; width: 15ch; padding: 0 2px; caret-color: var(--amber); text-transform: uppercase; }
+.cmdline input::placeholder { color: var(--amber); opacity: .55; }
+.cmdline input:focus-visible { outline: none; }
+.cmdline:focus-within { border-color: var(--amber); }
+.cmdline .go { border: 0; cursor: pointer; font-family: var(--f-mono); }
+
+/* ---------- RANK header details ---------- */
+.asof { font: 400 11px var(--f-mono); color: var(--dim); }
+.finder label i { font-style: normal; color: var(--down); font-family: var(--f-mono); }
+.q { cursor: pointer; }
+.q:hover { background: #121a26; }
+.q.selected { box-shadow: inset 3px 0 0 var(--yellow); }
+.rest li { cursor: pointer; }
+.rest li:hover { background: #121a26; }
+
+/* tick flash: the cell lights green or red for a moment when the line moves, as quote cells do on a terminal */
+.mv.tick-up { animation: tickUp 1.6s ease-out 2; }
+.mv.tick-down { animation: tickDown 1.6s ease-out 2; }
+@keyframes tickUp { 0% { background: var(--up); color: #000; } 100% { background: transparent; } }
+@keyframes tickDown { 0% { background: var(--down); color: #fff; } 100% { background: transparent; } }
+
+/* pages for 11th and below */
+.rest-wrap h2 { display: flex; justify-content: space-between; align-items: center; }
+.pager { font: 600 11px var(--f-mono); color: var(--amber); background: transparent; border: 0; cursor: pointer; padding: 0; }
+.pager b { color: var(--white); }
+
+/* ---------- DES: one player's description page ---------- */
+.des { border-color: var(--amber); }
+.des h3 { display: flex; align-items: center; }
+.des .x { margin-left: auto; font: 600 16px var(--f-mono); color: var(--dim); background: none; border: 0; cursor: pointer; line-height: 1; }
+.des-head { display: grid; gap: 2px; margin-bottom: 8px; }
+.des-tk { font: 600 12px var(--f-mono); color: var(--yellow); }
+.des-nm { font-size: 22px; font-weight: 700; color: var(--white); overflow-wrap: anywhere; }
+.des-px { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.des-px b { font: 600 34px var(--f-mono); color: var(--amber); }
+.des-px b small { font: 400 14px var(--f-jp); color: var(--dim); margin-left: 3px; }
+.des-px span { font: 600 16px var(--f-mono); }
+.des dl { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; font-size: 12px; border-top: 1px solid var(--line); padding-top: 6px; }
+.des dt { color: var(--white); }
+.des dd { margin: 0; font-family: var(--f-mono); color: var(--amber); text-align: right; }
+.des .bar { height: 8px; background: #151515; margin: 8px 0 2px; position: relative; }
+.des .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--amber); }
+.des .bar-l { display: flex; justify-content: space-between; font: 400 10px var(--f-mono); color: var(--dim); }
+@media (prefers-reduced-motion: reduce) { .mv.tick-up, .mv.tick-down { animation: none; } }

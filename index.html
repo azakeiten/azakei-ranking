@@ -18,9 +18,11 @@
 </head>
 <body>
 <header class="cmd">
-  <div class="cmdline" aria-label="コマンド欄">
-    <span class="tk">AZK</span><span class="sector">&lt;Equity&gt;</span><span class="fn" id="fnName">RANK</span><span class="cursor" aria-hidden="true"></span><span class="go">GO</span>
-  </div>
+  <form class="cmdline" id="cmdForm" autocomplete="off" role="search" aria-label="コマンド欄">
+    <span class="tk">AZK</span><span class="sector">&lt;Equity&gt;</span>
+    <input id="cmd" type="text" spellcheck="false" autocapitalize="characters" placeholder="RANK" aria-label="コマンドまたは名前">
+    <button class="go" type="submit">GO</button>
+  </form>
   <a class="title" href="https://azakeiten.github.io/"><b>AZAKEI 証券取引所</b><span>麻布経済展 ・ 本日の億万長者</span></a>
   <div class="session">
     <span class="state" id="mktState">取引中</span>
@@ -44,9 +46,10 @@
     <div class="ph">
       <span class="code">RANK</span>
       <h1 id="boardTitle">本日の億万長者</h1>
+      <span class="asof" id="asof"></span>
       <div class="days" id="days" hidden></div>
       <div class="finder" id="finder" hidden>
-        <label for="findName">銘柄検索</label>
+        <label for="findName"><i>96)</i> 銘柄検索</label>
         <input id="findName" type="search" autocomplete="off" spellcheck="false" placeholder="名前">
         <span class="find-result" id="findResult" role="status"></span>
       </div>
@@ -57,7 +60,7 @@
     <div class="rows" id="rows"></div>
     <p class="empty" id="empty">上場銘柄はまだありません。最初の記録が入ると表示されます。</p>
     <div class="rest-wrap" id="restWrap" hidden>
-      <h2 id="restHead">11位以下</h2>
+      <h2><span id="restHead">11位以下</span><button class="pager" id="pager" type="button" hidden></button></h2>
       <ol class="rest" id="rest"></ol>
     </div>
     <p class="status" id="status" role="status"></p>
@@ -86,6 +89,11 @@
       <p class="hint">押すと、お客さん側の画面も数秒で更新されます。まちがえた記録は一覧の「取消」で消せます。</p>
       <button class="linkish" id="forget" type="button" hidden>この端末の合言葉を忘れる</button>
     </form>
+
+    <div class="panel des" id="desPanel" hidden>
+      <h3><span class="code">DES</span><span id="desTitle">銘柄概要</span><button class="x" id="desClose" type="button" aria-label="閉じる">×</button></h3>
+      <div id="desBody"></div>
+    </div>
 
     <div class="panel" id="newsPanel" hidden>
       <h3><span class="code">TOP</span>ニュース</h3>

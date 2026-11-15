@@ -38,6 +38,11 @@ let isAdmin = location.hash === "#admin";
 let pass = ls.get("azakei-pass") || "";
 let busy = false, pendingDel = null, lastSig = "", failCount = 0, writeSeq = 0;
 let findQ = "";
+let movesFresh = false;         // moves were just recomputed → flash the cells once
+let asOf = 0;                   // when the board last received data
+let desId = null;               // player shown in DES
+let restPage = 0;
+const REST_PER = 15;
 let show = null;                // 大引け in progress
 
 /* ---------- ranking helpers ---------- */
@@ -120,8 +125,11 @@ function apply(list) {
   if (prevKnown && (fresh.size || list.length !== prevKnown.size)) {
     moves = new Map();
     ranksNow.forEach((r, id) => { if (prevRanks.has(id)) moves.set(id, prevRanks.get(id) - r); });
+    movesFresh = true;
   }
   prevRanks = ranksNow;
+  asOf = Date.now();
+  { const d = new Date(asOf); $("asof").textContent = "As of " + pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds()); }
 
   // breaking news
   let news = null;
@@ -222,6 +230,7 @@ function render(force) {
   renderFinder(list);
   renderNews();
   renderTape();
+  if (desId) renderDes();
   fresh = new Set();
 }
 
@@ -303,11 +312,13 @@ function quoteRow(e, rank, list) {
   const mv = document.createElement("span"); mv.className = "mv c-move";
   const m = moves.get(e.id);
   if (!moves.has(e.id) && fresh.has(e.id)) { mv.textContent = "新規"; mv.classList.add("up"); }
-  else if (m > 0) { mv.textContent = "▲" + m; mv.classList.add("up"); }
-  else if (m < 0) { mv.textContent = "▼" + (-m); mv.classList.add("down"); }
+  else if (m > 0) { mv.textContent = "▲" + m; mv.classList.add("up"); if (movesFresh) mv.classList.add("tick-up"); }
+  else if (m < 0) { mv.textContent = "▼" + (-m); mv.classList.add("down"); if (movesFresh) mv.classList.add("tick-down"); }
   else { mv.textContent = "─"; mv.classList.add("flat"); }
   if (isAdmin && pass) mv.appendChild(delButton(e));
+  if (e.id === desId) row.classList.add("selected");
   row.append(rk, code, nm, px, pc, mv);
+  row.addEventListener("click", (ev) => { if (ev.target.closest(".del")) return; openDes(e.id); });
   return row;
 }
 
@@ -323,19 +334,94 @@ function renderRows(list) {
     const dy = was - el.getBoundingClientRect().top; if (Math.abs(dy) < 2) return;
     el.animate([{ transform: "translateY(" + dy + "px)" }, { transform: "none" }], { duration: 650, easing: "cubic-bezier(.2,.8,.2,1)" });
   });
+  movesFresh = false;
+  renderRest(list);
+}
+
+/* 11th and below, a page at a time; the projector turns pages by itself */
+function renderRest(list) {
+  const restList = list.slice(TOP_N);
+  $("restWrap").hidden = !restList.length;
+  const pages = Math.max(1, Math.ceil(restList.length / REST_PER));
+  // jump to the page holding a searched name
+  const hitAt = findQ ? restList.findIndex(matches) : -1;
+  if (hitAt >= 0) restPage = Math.floor(hitAt / REST_PER);
+  if (restPage >= pages) restPage = 0;
+  const from = restPage * REST_PER;
+  $("restHead").textContent = (TOP_N + 1 + from) + "〜" + (TOP_N + Math.min(from + REST_PER, restList.length)) + "位";
+  const pg = $("pager"); pg.hidden = pages < 2; pg.textContent = "";
+  if (pages > 1) { pg.append("Page "); const b = document.createElement("b"); b.textContent = (restPage + 1) + "/" + pages; pg.append(b, " ▸"); }
   const rest = $("rest"); rest.textContent = "";
-  $("restWrap").hidden = list.length <= TOP_N;
-  $("restHead").textContent = (TOP_N + 1) + "位以下";
-  list.slice(TOP_N).forEach(e => {
+  restList.slice(from, from + REST_PER).forEach(e => {
     const li = document.createElement("li"); if (matches(e)) li.className = "found";
     const rk = document.createElement("span"); rk.className = "rk"; rk.textContent = rankOf(list, e);
     const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = e.name;
     const px = document.createElement("span"); px.className = "px"; px.textContent = num(e.chips) + "枚";
     li.append(rk, nm, px);
     if (isAdmin && pass) li.appendChild(delButton(e));
+    li.addEventListener("click", (ev) => { if (ev.target.closest(".del")) return; openDes(e.id); });
     rest.appendChild(li);
   });
 }
+$("pager").addEventListener("click", (ev) => { ev.currentTarget.blur(); restPage++; renderRest(ranked(filter)); });
+setInterval(() => { if (show || findQ || document.hidden) return; const l = ranked(filter); if (l.length > TOP_N + REST_PER) { restPage++; renderRest(l); } }, 8000);
+
+/* DES: one player's description page */
+function openDes(id) { desId = id; renderDes(); document.querySelectorAll(".q").forEach(r => r.classList.toggle("selected", r.dataset.id === id)); if (matchMedia("(max-width: 960px)").matches) $("desPanel").scrollIntoView({ block: "start", behavior: reduced() ? "auto" : "smooth" }); }
+function closeDes() { desId = null; $("desPanel").hidden = true; document.querySelectorAll(".q.selected").forEach(r => r.classList.remove("selected")); }
+$("desClose").addEventListener("click", closeDes);
+function renderDes() {
+  const panel = $("desPanel"), e = entries.find(x => x.id === desId);
+  if (!e) { panel.hidden = true; return; }
+  panel.hidden = false;
+  const list = ranked(e.date), r = rankOf(list, e), n = list.length;
+  const chips = list.map(x => x.chips).sort((a, b) => a - b);
+  const med = n % 2 ? chips[(n - 1) / 2] : (chips[n / 2 - 1] + chips[n / 2]) / 2;
+  const top = list[0];
+  $("desTitle").textContent = "銘柄概要";
+  const body = $("desBody"); body.textContent = "";
+  const head = document.createElement("div"); head.className = "des-head";
+  const tk = document.createElement("span"); tk.className = "des-tk"; tk.textContent = codeOf(e) + " JT Equity";
+  const nm = document.createElement("span"); nm.className = "des-nm"; nm.textContent = e.name;
+  const px = document.createElement("div"); px.className = "des-px";
+  const b = document.createElement("b"); b.textContent = num(e.chips); const u = document.createElement("small"); u.textContent = "枚"; b.appendChild(u);
+  const p = document.createElement("span"); p.className = dirClass(e.chips - START); p.textContent = fmtPct(e.chips);
+  px.append(b, p); head.append(tk, nm, px); body.appendChild(head);
+  // where this player sits between the lowest and the highest of the day
+  const lo = chips[0], hi = chips[chips.length - 1];
+  const bar = document.createElement("div"); bar.className = "bar"; const fill = document.createElement("i"); fill.style.width = (hi > lo ? (e.chips - lo) / (hi - lo) * 100 : 100) + "%"; bar.appendChild(fill);
+  const bl = document.createElement("div"); bl.className = "bar-l"; const a1 = document.createElement("span"); a1.textContent = "安値 " + lo; const a2 = document.createElement("span"); a2.textContent = "高値 " + hi; bl.append(a1, a2);
+  body.append(bar, bl);
+  const rows = [
+    ["順位", r + "位 / " + n + "人"],
+    ["上位", Math.max(1, Math.round(r / n * 100)) + "%"],
+    ["1位との差", e.id === top.id ? "首位" : "−" + (top.chips - e.chips) + "枚"],
+    ["中央値との比較", med ? "×" + (Math.round(e.chips / med * 10) / 10) : "—"],
+    ["スタートの", Math.round(e.chips / START * 10) / 10 + "倍"],
+    ["上場日時", fmtShort(e.date) + " " + (e.createdAt ? hhmm(e.createdAt) : "—")],
+    ["シャーペン", e.chips > PRIZE ? "獲得" : "あと" + (PRIZE + 1 - e.chips) + "枚"]
+  ];
+  if (LAST_YEAR) rows.push(["上場来高値（" + LAST_YEAR + "）", e.chips > LAST_YEAR ? "更新" : "あと" + (LAST_YEAR + 1 - e.chips) + "枚"]);
+  const dl = document.createElement("dl");
+  rows.forEach(([k, v]) => { const dt = document.createElement("dt"); dt.textContent = k; const dd = document.createElement("dd"); dd.textContent = v; dl.append(dt, dd); });
+  body.appendChild(dl);
+}
+
+/* the command line actually works: a name opens DES, a few terminal-style commands do the rest */
+function setFn(s) { $("cmd").placeholder = s; }
+$("cmdForm").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const raw = $("cmd").value.trim(), c = raw.toUpperCase();
+  $("cmd").value = "";
+  if (!raw || c === "RANK") { if (show) endShow(); closeDes(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+  if (c === "CLOSE" || raw === "大引け") { startShow(); return; }
+  if (c === "TOP") { const p = $("newsPanel"); if (!p.hidden) p.scrollIntoView({ block: "start", behavior: "smooth" }); return; }
+  if (c === "FS") { $("fsBtn").click(); return; }
+  if (c === "HELP") { banner({ tag: "HELP", head: "名前 <GO> で銘柄概要", sub: "RANK：通常の画面 ／ CLOSE：大引け（結果発表） ／ TOP：ニュース ／ FS：全画面", amber: true, stay: 12000 }); return; }
+  const hit = ranked(filter).find(e => norm(e.name).includes(norm(raw))) || entries.find(e => norm(e.name).includes(norm(raw)));
+  if (hit) openDes(hit.id);
+  else setStatus("「" + raw + "」に当たる銘柄はありません。");
+});
 
 function renderTarget(list) {
   const box = $("target");
@@ -534,7 +620,7 @@ function startShow() {
   ctl.innerHTML = '<span class="hint2">クリック・スペースキーで1つずつ発表</span><button type="button" data-a="next">発表する</button><button type="button" data-a="auto">自動で発表</button><button type="button" data-a="end">おわる</button>';
   $("rows").after(ctl);
   ctl.addEventListener("click", (ev) => { const a = ev.target.dataset && ev.target.dataset.a; if (ev.target.blur) ev.target.blur(); if (a === "next") revealNext(); else if (a === "auto") toggleAuto(); else if (a === "end") endShow(); });
-  $("boardTitle").textContent = "本日の大引け　結果発表"; $("fnName").textContent = "CLOSE";
+  $("boardTitle").textContent = "本日の大引け　結果発表"; setFn("CLOSE");
   show = { rows, list: ranked(filter), ctl, next: rows.length - 1, auto: false, busy: false, timer: null };
   $("showBtn").textContent = "発表をおわる";
 }
@@ -584,7 +670,7 @@ function endShow() {
   if (!show) return;
   clearTimeout(show.timer); show.ctl.remove(); show = null;
   document.body.classList.remove("closing"); setSession(false);
-  $("boardTitle").textContent = "本日の億万長者"; $("fnName").textContent = "RANK";
+  $("boardTitle").textContent = "本日の億万長者"; setFn("RANK");
   $("showBtn").textContent = "大引け（結果発表）";
   render(true);
 }
@@ -647,6 +733,7 @@ if (DEMO) {
   const yesterday = y.getFullYear() + "-" + pad(y.getMonth() + 1) + "-" + pad(y.getDate());
   const offsets = [215, 190, 172, 150, 141, 133, 118, 104, 96, 88, 61, 40, 22];
   demoList = names.map((n, i) => ({ id: "s" + i, name: n, chips: chips[(i * 5) % 13], date: today(), createdAt: now0 - offsets[i] * 60000 }));
+  ["ゆず", "そうた", "ひかり", "だいち", "まな", "こうき", "あかり", "しょう", "ゆい", "たくみ", "のぞみ", "りく", "ここな", "はやと", "えま", "かずき", "みゆ", "けい"].forEach((n, i) => demoList.push({ id: "f" + i, name: n, chips: [14, 11, 10, 9, 8, 8, 7, 6, 6, 5, 5, 4, 4, 3, 2, 2, 1, 0][i], date: today(), createdAt: now0 - (200 - i * 9) * 60000 }));
   [["そら", 88], ["れん", 54], ["ゆな", 31], ["かい", 12], ["めい", 6]].forEach(([n, c], i) => demoList.push({ id: "y" + i, name: n, chips: c, date: yesterday, createdAt: now0 - 86400000 - i * 1800000 }));
   apply(demoList.slice());
   setTimeout(() => { demoList.push({ id: "s-mid", name: "みお", chips: 52, date: today(), createdAt: Date.now() }); apply(demoList.slice()); }, 4000);
