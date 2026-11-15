@@ -212,3 +212,21 @@ body.fs .row:not(.m1) { font-size: clamp(22px, 2.5vw, 38px); }
 .qr { font: 500 11px var(--f-jp); letter-spacing: .04em; }
 .more-head, .pager { font: 500 12px var(--f-jp); letter-spacing: .04em; }
 .show-ctl span { font: 500 12px var(--f-jp); letter-spacing: .04em; }
+
+/* ---------- podium order: 1st > 2nd > 3rd > the rest ---------- */
+.row.m2, .row.m3 { background: var(--ink-3); margin: 6px 0; border-bottom: 0; }
+.row.m2::after, .row.m3::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; }
+.row.m2 { font-size: clamp(28px, 3.3vw, 52px); padding-block: clamp(12px, 1.4vw, 20px); }
+.row.m2::after { width: 8px; background: var(--silver); }
+.row.m3 { font-size: clamp(24px, 2.8vw, 42px); padding-block: clamp(10px, 1.1vw, 16px); }
+.row.m3::after { width: 6px; background: var(--bronze); }
+.row.m2 .rk, .row.m3 .rk { margin-left: 14px; width: 1.2em; height: 1.2em; font-size: .85em; }
+.row.m2 .nm { font-weight: 900; }
+.row.m2 .rs { color: var(--silver); }
+.row.m3 .rs { color: #d9a27a; }
+.row:not(.m1):not(.m2):not(.m3) { font-size: clamp(17px, 1.9vw, 28px); }
+.row:not(.m1):not(.m2):not(.m3) .nm { font-weight: 500; }
+body.final .row.m2 { font-size: clamp(30px, 3.6vw, 56px); }
+body.final .row.m3 { font-size: clamp(26px, 3vw, 46px); }
+body.final .row:not(.m1):not(.m2):not(.m3) { font-size: clamp(20px, 2.3vw, 34px); }
+@media (max-width: 760px) { .row.m2 { font-size: 24px; } .row.m3 { font-size: 21px; } .row:not(.m1):not(.m2):not(.m3) { font-size: 17px; } }
