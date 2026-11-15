@@ -18,15 +18,14 @@
 </head>
 <body>
 <header class="top">
-  <a class="event" href="https://azakeiten.github.io/"><b>AZAKEI 2026</b><span>麻布経済展</span></a>
-  <div class="status"><span class="live" id="live">LIVE</span><span class="clock" id="clock">--:--:--</span></div>
+  <a class="event" href="https://azakeiten.github.io/"><b>麻布経済展</b><span>AZAKEI 2026</span></a>
+  <div class="status"><span class="live" id="live">速報</span><span class="clock" id="clock">--:--:--</span></div>
 </header>
 
 <section class="head">
   <div class="head-text">
-    <p class="kicker" id="kicker">UNOFFICIAL RESULTS</p>
     <h1 id="title">本日の億万長者</h1>
-    <p class="sub">チップ獲得枚数　／　スタート 5枚</p>
+    <p class="sub">チップ獲得枚数（スタート5枚）</p>
   </div>
   <nav class="days" id="days" aria-label="日付" hidden></nav>
 </section>
@@ -34,7 +33,7 @@
 <div class="flash" id="flash" role="status" hidden></div>
 
 <main class="sheet">
-  <div class="thead" aria-hidden="true"><span>RANK</span><span>NAME</span><span class="r c-time">TIME</span><span class="r c-mult">× START</span><span class="r">RESULT</span><span></span></div>
+  <div class="thead" aria-hidden="true"><span>順位</span><span>名前</span><span class="r c-time">時刻</span><span class="r c-mult">倍率</span><span class="r">記録</span><span></span></div>
   <ol class="results" id="rows"></ol>
   <p class="empty" id="empty">記録はまだありません。</p>
   <section class="more" id="more" hidden>
@@ -46,18 +45,18 @@
 
 <footer class="foot">
   <dl class="stats" id="stats"></dl>
-  <p class="legend"><b>Q</b>景品獲得（41枚以上）<b>ER</b>展示記録（前回の最高記録を更新）</p>
+  <p class="legend"><b>景品</b>41枚以上<b class="rec">大会新</b>前回の最高記録を更新</p>
   <div class="find">
-    <label for="findName">NAME</label>
-    <input id="findName" type="search" autocomplete="off" spellcheck="false" placeholder="名前で探す">
+    <label for="findName">自分の順位</label>
+    <input id="findName" type="search" autocomplete="off" spellcheck="false" placeholder="名前を入力">
     <span id="findResult" role="status"></span>
   </div>
   <div class="ctl">
-    <span id="adminBar" class="admin-tag" hidden>ADMIN</span>
-    <button class="btn" id="showBtn" type="button">FINAL RESULTS</button>
-    <button class="btn" id="fsBtn" type="button">FULL SCREEN</button>
+    <span id="adminBar" class="admin-tag" hidden>管理者</span>
+    <button class="btn" id="showBtn" type="button">結果発表</button>
+    <button class="btn" id="fsBtn" type="button">全画面</button>
   </div>
-  <div class="qr" id="qrPanel" hidden><div class="qr-code" id="qr"></div><span>LIVE RESULTS</span></div>
+  <div class="qr" id="qrPanel" hidden><div class="qr-code" id="qr"></div><span>スマホで見る</span></div>
 </footer>
 
 <form class="admin" id="form" autocomplete="off" hidden>

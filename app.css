@@ -186,3 +186,29 @@ body.final .row:not(.m1) { font-size: clamp(24px, 3vw, 46px); }
 
 @media (prefers-reduced-motion: reduce) { .flash.in, .row.enter, .row.m1.enter, .row.fresh, .live::before { animation: none; } }
 body.fs .row:not(.m1) { font-size: clamp(22px, 2.5vw, 38px); }
+
+/* ---------- Japanese broadcast wording: labels in Japanese, flat colour, no tracking, no pulsing ---------- */
+.event b { font: 800 18px var(--f-title); letter-spacing: .08em; }
+.event span { font: 600 14px var(--f-num); letter-spacing: .06em; opacity: .85; }
+.live { font: 700 14px var(--f-jp); letter-spacing: .1em; background: #fff; color: var(--shu); padding: 2px 10px; }
+.live::before { display: none; }
+.live.final { background: var(--kin); color: var(--ink); }
+.sub { letter-spacing: .04em; }
+.day { font: 700 14px var(--f-jp); letter-spacing: .04em; }
+.thead { font: 500 12px var(--f-jp); letter-spacing: .1em; }
+.row.m1 { background: var(--shu); }
+.row.m1 .lab { font: 700 clamp(14px, 1.3vw, 18px) var(--f-jp); letter-spacing: .1em; color: #fff; background: rgba(0,0,0,.22); justify-self: start; padding: 1px 10px; }
+.row.m1 .meta { font: 500 clamp(13px, 1.2vw, 18px) var(--f-jp); letter-spacing: .02em; color: #fbe6df; }
+.mark { font: 700 12px var(--f-jp); letter-spacing: 0; padding: 1px 6px; }
+.row.m1 .mark { font-size: 14px; }
+.flash .k { font: 900 clamp(16px, 1.6vw, 24px) var(--f-jp); letter-spacing: .06em; background: rgba(0,0,0,.22); padding: 2px 12px; }
+.flash.gold .k { background: rgba(0,0,0,.12); }
+.stats dt { font: 500 12px var(--f-jp); letter-spacing: .04em; color: var(--mid); }
+.legend b { font: 700 11px var(--f-jp); }
+.find label { font: 500 12px var(--f-jp); letter-spacing: .04em; color: var(--mid); }
+#findResult { font: 700 16px var(--f-jp); }
+.btn { font: 700 13px var(--f-jp); letter-spacing: .06em; }
+.admin-tag { font: 700 12px var(--f-jp); letter-spacing: .04em; }
+.qr { font: 500 11px var(--f-jp); letter-spacing: .04em; }
+.more-head, .pager { font: 500 12px var(--f-jp); letter-spacing: .04em; }
+.show-ctl span { font: 500 12px var(--f-jp); letter-spacing: .04em; }
