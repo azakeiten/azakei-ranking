@@ -42,7 +42,7 @@ function recordIds() {
 }
 
 /* ---------- clock ---------- */
-function tick() { const d = new Date(); $("clock").textContent = pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds()); }
+function tick() { const d = new Date(); $("clock").textContent = pad(d.getHours()) + ":" + pad(d.getMinutes()); }
 tick(); setInterval(tick, 1000);
 
 /* ---------- QR ---------- */
@@ -169,15 +169,12 @@ function renderRows(list) {
     li.dataset.id = e.id;
     const tail = marks(e, rec);
     if (isAdmin && pass) tail.appendChild(delButton(e));
-    if (r === 1) {
-      // the leader band: label, huge name and result, details underneath
-      const meta = document.createElement("span"); meta.className = "meta";
-      meta.append(cell("", "時刻 " + (e.createdAt ? hhmm(e.createdAt) : "—")), cell("", "倍率 " + mult(e.chips)), tail);
-      const rs = cell("rs", num(e.chips)); const u = document.createElement("small"); u.textContent = "枚"; rs.appendChild(u);
-      li.append(cell("rk", r), cell("lab", show ? "優勝" : "トップ"), cell("nm", e.name), meta, rs);
-    } else {
-      li.append(cell("rk", r), cell("nm", e.name), cell("tm c-time", e.createdAt ? hhmm(e.createdAt) : ""), cell("mx c-mult", mult(e.chips)), cell("rs", num(e.chips)), tail);
-    }
+    // TV-style plate: a slanted rank box, then a white plate with the name and the count
+    const rk = document.createElement("span"); rk.className = "rk"; const rn = document.createElement("b"); rn.textContent = r; rk.appendChild(rn);
+    const plate = document.createElement("span"); plate.className = "plate";
+    const rs = cell("rs", num(e.chips)); const u = document.createElement("small"); u.textContent = "枚"; rs.appendChild(u);
+    plate.append(cell("nm", e.name), tail, rs);
+    li.append(rk, plate);
     box.appendChild(li);
   });
   if (!reduced()) box.querySelectorAll(".row").forEach(el => {

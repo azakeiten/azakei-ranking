@@ -13,27 +13,20 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23000'/%3E%3Ctext x='32' y='45' font-size='36' text-anchor='middle' fill='%23fff' font-family='Arial Narrow,Arial' font-weight='700'%3E1%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700;900&family=Shippori+Mincho:wght@600;800&display=swap">
-<link rel="stylesheet" href="app.css?v=20261116b">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="app.css?v=20261116c">
 </head>
 <body>
 <header class="top">
-  <a class="event" href="https://azakeiten.github.io/"><b>麻布経済展</b><span>AZAKEI 2026</span></a>
-  <div class="status"><span class="live" id="live">速報</span><span class="clock" id="clock">--:--:--</span></div>
+  <h1 class="caption"><a class="cap-org" href="https://azakeiten.github.io/">麻布経済展</a><span class="cap-title" id="title">本日の億万長者</span><span class="cap-sub">チップ獲得枚数</span></h1>
+  <div class="status"><span class="live" id="live">速報</span><span class="clock" id="clock">--:--</span></div>
 </header>
 
-<section class="head">
-  <div class="head-text">
-    <h1 id="title">本日の億万長者</h1>
-    <p class="sub">チップ獲得枚数（スタート5枚）</p>
-  </div>
-  <nav class="days" id="days" aria-label="日付" hidden></nav>
-</section>
+<nav class="days" id="days" aria-label="日付" hidden></nav>
 
 <div class="flash" id="flash" role="status" hidden></div>
 
 <main class="sheet">
-  <div class="thead" aria-hidden="true"><span>順位</span><span>名前</span><span class="r c-time">時刻</span><span class="r c-mult">倍率</span><span class="r">記録</span><span></span></div>
   <ol class="results" id="rows"></ol>
   <p class="empty" id="empty">記録はまだありません。</p>
   <section class="more" id="more" hidden>
@@ -44,8 +37,7 @@
 </main>
 
 <footer class="foot">
-  <dl class="stats" id="stats"></dl>
-  <p class="legend"><b>景品</b>41枚以上<b class="rec">大会新</b>前回の最高記録を更新</p>
+  <dl class="stats" id="stats" hidden></dl>
   <div class="find">
     <label for="findName">自分の順位</label>
     <input id="findName" type="search" autocomplete="off" spellcheck="false" placeholder="名前を入力">
@@ -83,7 +75,7 @@
 </form>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="config.js?v=20261116b"></script>
-<script src="app.js?v=20261116b"></script>
+<script src="config.js?v=20261116c"></script>
+<script src="app.js?v=20261116c"></script>
 </body>
 </html>
